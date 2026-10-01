@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweetgreen Color Field</title>
+<meta name="description" content="Explore new color without leaving the Sweetgreen world.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2a14 14 0 1 1-14 14V2z%27 fill=%27%2300473C%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip" href="#explore">Skip to explorer</a>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div><b>Color Field</b><small>Sweetgreen color guideline</small></div>
+    </div>
+    <nav class="steps" aria-label="Steps">
+      <a href="#expression"><i>1</i>Expression</a>
+      <a href="#explore"><i>2</i>Explore</a>
+      <a href="#build"><i>3</i>Build</a>
+      <a href="#apply"><i>4</i>Apply</a>
+    </nav>
+    <div class="top-actions">
+      <label class="switch" title="Show OKLCH values, scores and contrast numbers">
+        <input id="tech-toggle" type="checkbox"><span class="track"></span><span>Technical view</span>
+      </label>
+    </div>
+  </div>
+  <div class="spectrum" aria-hidden="true">
+    <div class="spectrum-bar" id="spectrum-bar"></div>
+    <div class="spectrum-labels"><span>Grounded</span><span>← Evergreen →</span><span>Ripe</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Explore new color without leaving the Sweetgreen world.</h1>
+    <p>A living color system that moves from Grounded to Ripe, always anchored by Evergreen. Choose an expression, explore within it, and leave with colors <em>and</em> how to use them.</p>
+  </section>
+
+  <section id="expression" class="panel">
+    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>What energy should this moment have? Evergreen is always part of it.</p></div></header>
+    <div class="cards" id="expression-cards" role="radiogroup" aria-label="Expression"></div>
+    <div class="lean" id="lean" hidden>
+      <span class="lean-label">Lean</span>
+      <div class="seg" role="radiogroup" aria-label="Lean">
+        <button data-action="lean" data-v="grounded" role="radio">Grounded-led</button>
+        <button data-action="lean" data-v="balanced" role="radio">Balanced</button>
+        <button data-action="lean" data-v="ripe" role="radio">Ripe-led</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="explore" class="panel">
+    <header class="panel-head"><span class="num">2</span><div><h2>Explore color</h2><p id="explore-sub"></p></div></header>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="explore-grid">
+      <div class="field-col">
+        <div class="field-wrap">
+          <canvas id="field" width="360" height="200" tabindex="0" role="slider" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection."></canvas>
+          <div class="marker" id="marker"></div>
+          <div class="ev-marker" id="ev-marker"><span>Evergreen</span></div>
+          <span class="axis axis-y">Lighter ↑</span><span class="axis axis-x">Hue →</span>
+        </div>
+        <div class="slider-row">
+          <label for="intensity" id="intensity-label"></label>
+          <div class="slider-body"><span id="intensity-lo"></span><input id="intensity" type="range" min="0" max="100" step="1"><span id="intensity-hi"></span></div>
+        </div>
+        <div class="test">
+          <label for="hex-test">Have a color in mind?</label>
+          <div class="test-row"><input id="hex-test" type="text" placeholder="#E4572E" spellcheck="false" autocomplete="off"><button data-action="test-hex" class="btn">Check</button></div>
+          <div id="test-msg" class="test-msg" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <aside class="context" id="context" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section id="build" class="panel">
+    <header class="panel-head"><span class="num">3</span><div><h2>Build a combination</h2><p>Counterparts are drawn only from approved territory and judged against Evergreen.</p></div></header>
+    <div id="build-body"></div>
+  </section>
+
+  <section id="apply" class="panel">
+    <header class="panel-head"><span class="num">4</span><div><h2>Apply</h2><p>Not just what the colors are, but how to use them.</p></div></header>
+    <div id="apply-body"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Territory boundaries are provisional until calibrated against Sweetgreen's approved samples. CMYK values are indicative only; confirm with press proofs.</p>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/color.js"></script>
+<script src="js/territories.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
