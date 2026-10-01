@@ -41,14 +41,15 @@
       chroma: cRatio <= P.maxChromaRatio ? 1 : clamp(1 - (cRatio - P.maxChromaRatio) / 2, 0.3, 1),
       dominance: 1,
     };
-    // two similar deep greens fight for the anchor role
-    const closeHue = 1 - ramp(dh, 20, 60), closeL = 1 - ramp(Math.abs(dL), 0.08, 0.25), closeC = ramp(c.C, 0.03, 0.08);
+    // a second green of similar lightness and presence fights Evergreen for the anchor role;
+    // chroma is judged relative to Evergreen's own vividness
+    const closeHue = 1 - ramp(dh, 20, 60), closeL = 1 - ramp(Math.abs(dL), 0.08, 0.25), closeC = ramp(c.C / EV.C, 0.25, 0.6);
     parts.dominance = 1 - 0.85 * closeHue * closeL * closeC;
     const score = Object.entries(P.w).reduce((s, [k, w]) => s + parts[k] * w, 0);
     const verdict = score >= P.works ? 'works' : score >= P.withCare ? 'care' : 'competes';
 
     const notes = [];
-    if (parts.dominance < 0.6) notes.push('Competes with Evergreen as a deep green.');
+    if (parts.dominance < 0.6) notes.push('Competes with Evergreen as a green.');
     else if (parts.distinct < 0.5) notes.push('Sits close to Evergreen; it may not read as its own color.');
     if (parts.separation < 0.4 && parts.dominance >= 0.6) notes.push('Similar depth to Evergreen; pair with care.');
     if (dh >= 150 && parts.distinct >= 0.5) notes.push('An intentional contrast to Evergreen.');

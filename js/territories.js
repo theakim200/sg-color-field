@@ -10,7 +10,7 @@
   const { clamp, lerp, hueDiff, fitToGamut, fromHex } = SG.color;
 
   const CONFIG = {
-    evergreenHex: '#00473C', // single source for the brand anchor; confirm against brand master
+    evergreenHex: '#00A810', // PANTONE 2423 C, RGB 0/168/16. Single source for the brand anchor
     inkHex: '#141A18',        // dark type color used in contrast tests
     whiteHex: '#FFFFFF',
     coreDepth: 0.15,          // inside by >= 15% of the local range = "core"; 0..15% = "edge"

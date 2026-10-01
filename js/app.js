@@ -267,7 +267,7 @@
 
   function colorCard(e, o) {
     const g = E.guidance(e.hex, e.c), s = e.spec;
-    if (e.key === 'evergreen') g.tags = g.tags.filter((t) => !/Evergreen/.test(t.text)).concat({ text: 'The constant', tone: 'good' });
+    if (e.key === 'evergreen') g.tags = g.tags.filter((t) => !/Evergreen|accent/.test(t.text)).concat({ text: 'Works as a field with large type or logo', tone: 'info' }, { text: 'The constant', tone: 'good' });
     return `<article class="ccard">
       <div class="ccard-sw" style="background:${e.hex};color:${textOn(e.hex).name === 'Ink' ? CONFIG.inkHex : '#fff'}">
         <b>${labelOf(e.key)}</b><span>${o.role[0].toUpperCase() + o.role.slice(1)}${o.anchor ? ' · Anchor' : ''}</span></div>

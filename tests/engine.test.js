@@ -5,7 +5,7 @@ const { color: C, territories: T, engine: E } = globalThis.SG;
 let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ok', name); };
 
 ok('hex <-> oklch round trip', () => {
-  for (const hex of ['#00473C', '#FF5A36', '#8A6B4F', '#F2C94C']) assert.strictEqual(C.toHex(C.fromHex(hex)), hex);
+  for (const hex of ['#00A810', '#FF5A36', '#8A6B4F', '#F2C94C']) assert.strictEqual(C.toHex(C.fromHex(hex)), hex);
 });
 ok('known contrast: black on white = 21', () => assert(Math.abs(C.wcag('#000000', '#FFFFFF') - 21) < 0.01));
 ok('APCA polarity: dark on light > 0, light on dark < 0', () => { assert(C.apca('#000000', '#FFFFFF') > 100); assert(C.apca('#FFFFFF', '#000000') < -100); });
@@ -45,7 +45,7 @@ ok('reachable share of each territory is healthy (gamut check)', () => {
 });
 
 ok('a near-copy of Evergreen competes; a warm ripe contrast works', () => {
-  assert.strictEqual(E.evergreenRelationship(C.fromHex('#0B4D40')).verdict, 'competes');
+  assert.strictEqual(E.evergreenRelationship(C.fromHex('#10A818')).verdict, 'competes');
   assert.notStrictEqual(E.evergreenRelationship(T.colorAt('ripe', 25, 0.68, 0.6)).verdict, 'competes');
 });
 ok('recommend returns approved-territory, non-competing, hue-diverse counterparts', () => {
@@ -55,14 +55,18 @@ ok('recommend returns approved-territory, non-competing, hue-diverse counterpart
   assert(new Set(recs.map((r) => Math.floor(r.color.h / 36))).size === recs.length);
 });
 ok('hierarchy: dominant must host type; Evergreen always present', () => {
-  const hexes = { evergreen: '#00473C', grounded: '#8A6B4F', ripe: '#FF5A36' };
+  const hexes = { evergreen: '#00A810', grounded: '#8A6B4F', ripe: '#FF5A36' };
   for (const lean of ['grounded', 'balanced', 'ripe']) {
     const h = E.hierarchy('both', lean, hexes);
     assert.strictEqual(h.length, 3); assert(h.some((x) => x.key === 'evergreen')); assert.strictEqual(h[0].role, 'dominant');
   }
 });
-ok('guidance emits brand-use tags', () => {
-  const g = E.guidance('#00473C', T.evergreen);
-  assert(g.tags.some((t) => t.text === 'Approved for text'));
+ok('guidance: bright Evergreen is large-type only (white 3.2:1, ink Lc 44)', () => {
+  const g = E.guidance('#00A810', T.evergreen);
+  assert(g.tags.some((t) => t.text === 'Large type only on top'));
+  assert(!g.tags.some((t) => t.text === 'Approved for text'));
+});
+ok('a deep, tempered color gets body-text approval', () => {
+  assert(E.guidance('#2B3A55', C.fromHex('#2B3A55')).tags.some((t) => t.text === 'Approved for text'));
 });
 console.log(`\n${n} checks passed`);
