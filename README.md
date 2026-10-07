@@ -15,6 +15,10 @@ OKLCH values, scores and contrast numbers are in the **Technical view** drawer (
 
 The previous scrolling layout is archived in `archive/` (single self-contained HTML, commit `6e821b5`).
 
+## Look
+Palette: Evergreen (`#00A810`), white, black, and neutral grays. Status is carried by form, not hue (good = Evergreen tint, caution = outlined, avoid = solid black). Color swatches and the color field are the only other colors on screen, because they are the content.
+Type: GT America Compressed, Bold for text and Black for headings (see `fonts/README.md`).
+
 ## Architecture
 | File | Role |
 |---|---|
@@ -50,7 +54,7 @@ Edit `ZONES` in `js/spectrum.js` to change this. Roles (Dominant / Supporting / 
 
 ## Needs calibration before launch
 1. **Territory tables are provisional.** They are seeded from general color knowledge and sRGB gamut limits, not from approved Sweetgreen samples. Follow *Visual → Sample → Measure → Rule*: classify a large set as approved / borderline / outside, measure it in OKLCH, and replace the tables in `territories.js`. The `core`/`edge` margin is `CONFIG.coreDepth`.
-2. **Evergreen** is PANTONE 2423 C (RGB 0/168/16, `#00A810`, OKLCH 63% 0.212 143°) in `CONFIG`. **Ink** (`#141A18`) is an assumed dark type color; confirm it. The tool's own UI uses a deeper green (`--deep` in `style.css`) for headings and buttons because white type on Evergreen is only about 3.2:1.
+2. **Evergreen** is PANTONE 2423 C (RGB 0/168/16, `#00A810`, OKLCH 63% 0.212 143°) in `CONFIG`. **Ink** (`#111111`) is an assumed dark type color; confirm it. The tool's own UI uses black for headings and buttons because white type on Evergreen is only about 3.2:1.
 3. **Scoring weights and thresholds** in `engine.PARAMS` (hue harmony curve, Evergreen-fit weights) are first-pass and should be tuned against pairings the brand team judges good or bad.
 4. **CMYK** is a naive conversion; use press-profile values for print.
 5. Contrast "body text" requires WCAG ≥ 4.5 **and** APCA |Lc| ≥ 60 (`PARAMS.contrast`). Adjust to your accessibility policy.

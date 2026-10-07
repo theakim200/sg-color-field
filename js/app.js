@@ -157,7 +157,7 @@
             img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = bl; img.data[i + 3] = Math.round(255 * C.clamp(dL / 0.06, 0.35, 1));
           }
         }
-        if (!ok) { img.data[i] = 20; img.data[i + 1] = 40; img.data[i + 2] = 35; img.data[i + 3] = 14; }
+        if (!ok) { img.data[i] = 0; img.data[i + 1] = 0; img.data[i + 2] = 0; img.data[i + 3] = 14; }
       }
     }
     ctx.putImageData(img, 0, 0);
@@ -347,7 +347,7 @@
     }
     ctx.putImageData(img, 0, 0);
     const X = (c) => (c / Cmax) * W, Y = (L) => (1 - L) * H;
-    for (const [k, col] of [['grounded', '#8a6b4f'], ['ripe', '#e4572e']]) {
+    for (const [k, col] of [['grounded', '#7a7a7a'], ['ripe', '#111111']]) {
       const b = T.bounds(k, hue);
       ctx.fillStyle = col + '33'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
       ctx.fillRect(X(b.Cmin), Y(b.Lmax), X(b.Cmax) - X(b.Cmin), Y(b.Lmin) - Y(b.Lmax));
