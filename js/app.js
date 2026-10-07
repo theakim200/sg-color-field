@@ -1,6 +1,10 @@
 /* Front end. Translates the engine's technical results into brand language.
-   Journey, left to right on one screen: Choose an expression -> Explore color -> Build a combination -> Apply.
-   Numbers (OKLCH, scores, contrast) live in the Technical view drawer, not in the columns.
+   Layout: the colors appear once, large, on a central stage; tools float around it.
+     left   = Expression (balance handlebar, layout, how the combination reads)
+     stage  = the colors, each carrying its role and which type works on it
+     right  = the selected color (field, intensity, HEX check, values, usage)
+     bottom = counterpart suggestions
+   Numbers (OKLCH, scores, contrast) live in the Technical view sheet.
 
    Model: Evergreen is always present. Up to 3 more chips (Grounded g1/g2, Ripe r1/r2).
    The balance handlebar picks a zone; each zone allows specific combinations (js/spectrum.js). */
@@ -14,13 +18,14 @@
   const CHIP_IDS = ['g1', 'g2', 'r1', 'r2'];
   const terrOf = (id) => (id[0] === 'g' ? 'grounded' : 'ripe');
   const LEVEL = { body: ['Body text', 'good', '✓'], large: ['Large text only', 'warn', 'L'], fail: ['Avoid', 'bad', '✕'] };
+  const ROLE_LABEL = { dominant: 'Dominant', supporting: 'Supporting', accent: 'Accent' };
 
   const seed = { g1: T.colorAt('grounded', 45, 0.5, 0.5), r1: T.colorAt('ripe', 25, 0.66, 0.6) };
   seed.g2 = E.companion('grounded', seed.g1);
   seed.r2 = E.companion('ripe', seed.r1);
 
   const S = {
-    p: 0.5, picks: {}, tech: false, active: 'r1',
+    p: 0.5, picks: {}, tech: false, active: 'r1', view: 'blocks',
     chips: { ...seed },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
     recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null,
@@ -45,13 +50,15 @@
     };
     const order = ['r1', 'r2', 'e', 'g1', 'g2'].filter((id) => id === 'e' || ids.includes(id));
     const items = order.map(mk), byId = Object.fromEntries(items.map((i) => [i.id, i]));
-    cur = { zone, z, pick, code, ids, q, items, byId, chipItems: items.filter((i) => i.id !== 'e'), hasG: q.g > 0, hasR: q.r > 0, labelOf };
+    const ranked = E.hierarchy(items), roles = Object.fromEntries(ranked.map((o) => [o.id, o]));
+    cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: items.filter((i) => i.id !== 'e'), hasG: q.g > 0, hasR: q.r > 0, labelOf };
     if (!ids.includes(S.active)) S.active = ids.includes('r1') ? 'r1' : 'g1';
   }
   const activeKey = () => terrOf(S.active);
   const textOn = (hex) => E.bestForeground(hex);
   const inkOrWhite = (hex) => (textOn(hex).name === 'Ink' ? CONFIG.inkHex : '#fff');
   const tagHtml = (t) => `<span class="tag tag-${t.tone}">${t.text}</span>`;
+  const rgba = (hex, a) => `rgba(${C.parseHex(hex).join(',')},${a})`;
 
   function depthPhrase(c, key) {
     const m = T.membership(c);
@@ -79,13 +86,13 @@
     }
   }
 
-  /* ---------- 1. Expression: balance handlebar + stack ---------- */
-  function renderComposer() {
+  /* ---------- left: expression ---------- */
+  const overallLabel = (s) => (s >= 0.72 ? ['Strong match', 'good'] : s >= 0.55 ? ['Good match', 'info'] : ['Use with care', 'warn']);
+
+  function renderLeft() {
     $('#balance').value = Math.round(S.p * 1000);
-    // zone legend, Grounded end (left) to Ripe end (right)
     $('#bal-zones').innerHTML = SP.ZONES.map((z) => `<span class="zone${z.id === cur.z.id ? ' on' : ''}">${z.combos.join('<br>')}</span>`).join('');
 
-    // layout choices inside the current zone
     $('#layouts').innerHTML = cur.z.combos.length < 2 ? '' : cur.z.combos.map((code, i) => {
       const q = SP.parse(code);
       const dots = [...SP.ids(code).filter((x) => x[0] === 'g'), 'e', ...SP.ids(code).filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
@@ -97,48 +104,62 @@
     $('#count-note').innerHTML = n >= 3
       ? `<span class="tag tag-warn">3 colors: possible, not recommended</span><span>Two is the recommended maximum.</span>`
       : `<span class="tag tag-good">${n} ${n === 1 ? 'color' : 'colors'} + Evergreen</span>`;
-    renderStack();
+
+    const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
+    $('#combo').innerHTML = `<span class="sub">This combination</span><div class="tags"><span class="tag tag-${tone}">${lab}</span></div><p>${ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.'}</p>`;
+
+    // chrome that follows the selection
+    const g = cur.byId.g1 ? cur.byId.g1.hex : CONFIG.evergreenHex, r = cur.byId.r1 ? cur.byId.r1.hex : CONFIG.evergreenHex;
+    $('#spectrum-bar').style.background = `linear-gradient(90deg, ${g}, ${CONFIG.evergreenHex} 50%, ${r})`;
+    $('#app').style.setProperty('--tint', rgba(cur.ranked[0].hex, 0.16));
+    $$('[data-action=view]').forEach((b) => { const on = b.dataset.v === S.view; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
   }
 
-  function renderStack() {
+  /* ---------- stage: the colors, once ---------- */
+  function typeSamples(it) {
+    const extras = cur.chipItems.filter((c) => c.id !== it.id).map((c) => [c.label, c.hex]);
+    return E.foregrounds(it.hex, extras).map((f) => {
+      const [lab, , mark] = LEVEL[f.level];
+      return `<span class="ts lvl-${f.level}" style="color:${f.fg}" title="${f.name} type on ${it.label}: ${lab}"><b>Aa</b><em>${mark}</em></span>`;
+    }).join('');
+  }
+
+  function renderStage() {
+    $('#stack-wrap').hidden = S.view !== 'blocks';
+    $('#comp').hidden = S.view !== 'composition';
+    if (S.view === 'composition') { $('#comp').innerHTML = posterHtml(cur.ranked); return; }
+
     const stack = $('#stack');
     let first = true;
     ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
       const el = $(`.slot[data-id=${id}]`, stack), it = cur.byId[id];
       if (!it) { el.classList.remove('on', 'first', 'sel'); el.style.flexGrow = 0; el.tabIndex = -1; return; }
-      const isFirst = first; first = false;
+      const isFirst = first, role = cur.roles[id]; first = false;
       el.classList.add('on'); el.classList.toggle('first', isFirst);
       el.classList.toggle('sel', S.active === id);
       el.classList.toggle('compact', it.area < 0.5);
+      el.classList.toggle('small', it.area < 0.6);
       el.style.flexGrow = it.area; el.style.background = it.hex; el.style.color = inkOrWhite(it.hex); el.tabIndex = id === 'e' ? -1 : 0;
-      el.setAttribute('aria-label', `${it.label}, ${it.hex}`);
-      el.innerHTML = `<span class="b-label">${it.label}</span><span class="b-hex">${it.hex}</span>`;
+      el.setAttribute('aria-label', `${it.label}, ${it.hex}, ${ROLE_LABEL[role.role]}`);
+      el.innerHTML = `<span class="b-role"><em>${ROLE_LABEL[role.role]}</em>${role.anchor ? '<em>Anchor</em>' : ''}</span>
+        <span class="b-label">${it.label}</span><span class="b-hex">${it.hex}</span><span class="b-type">${typeSamples(it)}</span>`;
     });
     $('[data-empty=top]', stack).classList.toggle('on', !cur.hasR);
     $('[data-empty=bottom]', stack).classList.toggle('on', !cur.hasG);
-
-    // header spectrum follows the selection
-    const g = cur.byId.g1 ? cur.byId.g1.hex : CONFIG.evergreenHex, r = cur.byId.r1 ? cur.byId.r1.hex : CONFIG.evergreenHex;
-    $('#spectrum-bar').style.background = `linear-gradient(90deg, ${g}, ${CONFIG.evergreenHex} 50%, ${r})`;
   }
 
-  /* ---------- 2. Explore ---------- */
-  function renderTabs() {
-    const tabs = $('#tabs');
-    tabs.hidden = cur.chipItems.length < 2;
-    tabs.innerHTML = cur.chipItems.map((it) => `<button role="tab" aria-selected="${S.active === it.id}" class="${S.active === it.id ? 'on' : ''}" data-action="chip" data-v="${it.id}">
-      <i style="background:${it.hex}"></i>${it.label}</button>`).join('');
+  function posterHtml(order) {
+    const n = order.length;
+    const blocks = order.map((o) => {
+      const tag = `<small>${o.label}${o.anchor ? ' · Anchor' : ''}</small>`;
+      const inner = o.role === 'dominant' ? `${tag}<h4>In season, right now.</h4><p>Fresh ingredients, thoughtfully grown.</p>`
+        : o.role === 'accent' ? `${tag}<span class="pill">Order now</span>` : `${tag}<p>Secondary information.</p>`;
+      return `<button class="b b-${o.role}${S.active === o.id ? ' sel' : ''}" data-action="chip" data-id="${o.id}" style="background:${o.hex};color:${inkOrWhite(o.hex)}" aria-label="${o.label}">${inner}</button>`;
+    });
+    return `<div class="poster n${n}" style="${n >= 3 ? `grid-template-rows:repeat(${n - 1},1fr)` : ''}" aria-label="Composition preview, illustrative proportions">${blocks.join('')}</div>`;
   }
 
-  function renderExploreStatic() {
-    const key = activeKey(), terr = TERRITORIES[key];
-    $('#explore-sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
-    $('#intensity-label').textContent = `How ${key === 'grounded' ? 'full' : 'heightened'}?`;
-    $('#intensity-lo').textContent = terr.slider[0];
-    $('#intensity-hi').textContent = terr.slider[1];
-    $('#intensity').value = Math.round(S.t[S.active] * 100);
-  }
-
+  /* ---------- right: the selected color ---------- */
   function buildField(key, t) {
     const { w, h, Ltop, Lbot } = FIELD;
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -180,17 +201,22 @@
     ev.style.background = CONFIG.evergreenHex;
   }
 
-  function renderContext() {
-    const key = activeKey(), it = cur.byId[S.active], g = E.guidance(it.hex, it.c);
-    $('#context').innerHTML = `
-      <div class="stage">
-        <div class="stage-ev" style="background:${CONFIG.evergreenHex};color:${inkOrWhite(CONFIG.evergreenHex)}"><span>Evergreen</span></div>
-        <div class="stage-sel" style="background:${it.hex};color:${g.best.level === 'fail' ? '#fff' : inkOrWhite(it.hex)}">
-          <span class="stage-aa">Aa</span><span>${it.label}</span>
-        </div>
-      </div>
-      <div class="hexline"><b>${it.hex}</b><button class="mini" data-action="copy" data-v="${it.hex}" aria-label="Copy HEX">Copy</button><span class="depth">${depthPhrase(it.c, key)}</span></div>
-      <div class="tags ctx-tags">${tagHtml(g.tags[g.tags.length - 1])}</div>
+  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
+
+  function renderInspector() {
+    const key = activeKey(), terr = TERRITORIES[key], it = cur.byId[S.active], s = it.spec, g = E.guidance(it.hex, it.c);
+    $('#insp-sw').style.background = it.hex;
+    $('#insp-title').textContent = it.label;
+    $('#insp-sub').textContent = `${depthPhrase(it.c, key)} · ${cur.roles[it.id] ? ROLE_LABEL[cur.roles[it.id].role] : ''}`;
+    $('#intensity-label').textContent = `How ${key === 'grounded' ? 'full' : 'heightened'}?`;
+    $('#intensity-lo').textContent = terr.slider[0];
+    $('#intensity-hi').textContent = terr.slider[1];
+    $('#intensity').value = Math.round(S.t[S.active] * 100);
+    drawField();
+    const tags = g.tags.slice(0, 2).concat(g.tags.slice(-1)).filter((t, i, a) => a.indexOf(t) === i);
+    $('#insp-use').innerHTML = `
+      <div class="vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
+      <div class="tags">${tags.map(tagHtml).join('')}</div>
       <p class="note">${g.rel.notes.join(' ')}</p>`;
   }
 
@@ -217,89 +243,25 @@
       <button class="mini" data-action="snap">Use it</button>${other ? `<button class="mini" data-action="goto" data-v="${other[0]}1" data-hex="${C.toHex(c)}">Use as ${TERRITORIES[other].label}</button>` : ''}`;
   }
 
-  /* ---------- 3. Build ---------- */
-  const overallLabel = (s) => (s >= 0.72 ? ['Strong match', 'good'] : s >= 0.55 ? ['Good match', 'info'] : ['Use with care', 'warn']);
-
-  function posterHtml(order) {
-    const n = order.length;
-    const blocks = order.map((o) => {
-      const tag = `<small>${o.label}${o.anchor ? ' · Anchor' : ''}</small>`;
-      const inner = o.role === 'dominant' ? `${tag}<h4>In season, right now.</h4><p>Fresh ingredients, thoughtfully grown.</p>`
-        : o.role === 'accent' ? `${tag}<span class="pill">Order now</span>` : `${tag}<p>Secondary information.</p>`;
-      return `<div class="b b-${o.role}" style="background:${o.hex};color:${inkOrWhite(o.hex)}">${inner}</div>`;
-    });
-    return `<div class="poster n${n}" style="${n >= 3 ? `grid-template-rows:repeat(${n - 1},1fr)` : ''}" aria-label="Composition preview, illustrative proportions">${blocks.join('')}</div>`;
-  }
-
-  function renderBuild() {
-    const order = E.hierarchy(cur.items);
-    let html = `<div class="roles">${order.map((o) => `
-      <div class="role" title="${o.note}"><span class="role-sw" style="background:${o.hex}"></span>
-        <div><b>${o.role[0].toUpperCase() + o.role.slice(1)}</b> <span class="role-name">${o.label}${o.anchor ? ' · anchor' : ''}</span><small>${o.note}</small></div></div>`).join('')}</div>`;
-
-    const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
-    html += `<div class="overall"><span class="tag tag-${tone}">${lab}</span>${cur.q.recommended ? '' : '<span class="tag tag-warn">3 colors</span>'}<span>${ev.notes.slice(0, 2).join(' ')}</span></div>`;
-
+  /* ---------- bottom dock: counterparts ---------- */
+  function renderDock() {
+    const dock = $('#dock');
     if (cur.hasG && cur.hasR) {
       const from = activeKey(), to = from === 'grounded' ? 'ripe' : 'grounded', target = to[0] + '1';
       S.recs = E.recommend(S.chips[S.active], from, 6);
-      html += `<h3 class="sub">${TERRITORIES[to].label} counterparts<small>for ${cur.byId[S.active].label}, replaces ${cur.labelOf(target)}</small></h3>
+      dock.innerHTML = `<div class="dock-label">${TERRITORIES[to].label} counterparts<small>for ${cur.byId[S.active].label}</small></div>
         <div class="recs">${S.recs.map((r, i) => {
           const sp = E.spec(r.color), on = cur.byId[target] && cur.byId[target].hex === sp.hex;
-          return `<button class="rec${on ? ' on' : ''}" data-action="rec" data-v="${i}" data-target="${target}" title="${r.reason}">
+          return `<button class="rec${on ? ' on' : ''}" data-action="rec" data-v="${i}" data-target="${target}" title="${r.reason}. Replaces ${cur.labelOf(target)}.">
             <span class="rec-sw" style="background:${sp.hex}"><i style="background:${CONFIG.evergreenHex}"></i></span>
             <b>${sp.hex}</b><span class="rec-why">${r.reason}</span></button>`; }).join('')}</div>`;
     } else {
       const other = cur.hasG ? 'Ripe' : 'Grounded';
-      html += `<div class="invite"><span>Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</span>
-        <button class="btn" data-action="mix">Add ${other}</button></div>`;
+      dock.innerHTML = `<div class="dock-invite"><span>Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</span><button class="btn" data-action="mix">Add ${other}</button></div>`;
     }
-    html += posterHtml(order);
-    $('#build-body').innerHTML = html;
   }
 
-  /* ---------- 4. Apply ---------- */
-  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
-
-  function crow(o) {
-    const g = E.guidance(o.hex, o.c), s = o.spec;
-    if (o.key === 'evergreen') g.tags = g.tags.filter((t) => !/Evergreen|accent/.test(t.text)).concat({ text: 'The constant', tone: 'good' });
-    return `<div class="crow"><span class="crow-sw" style="background:${o.hex}"></span><div style="min-width:0">
-      <div class="crow-title"><b>${o.label}</b><span>${o.role[0].toUpperCase() + o.role.slice(1)}${o.anchor ? ' · Anchor' : ''}</span></div>
-      <div class="crow-vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
-      <div class="tags crow-tags">${g.tags.slice(0, 1).map(tagHtml).join('')}</div></div></div>`;
-  }
-
-  function matrixHtml(order) {
-    const { whiteHex, inkHex, evergreenHex } = CONFIG;
-    const cols = [['White', whiteHex], ['Ink', inkHex], ['Evergreen', evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
-    const head = cols.map(([n, hex]) => `<div class="mx-h" title="${n} type"><i style="background:${hex}"></i></div>`).join('');
-    const rows = order.map((o) => {
-      const cells = cols.map(([n, hex]) => {
-        if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="mx same" title="Same color"></div>`;
-        const r = E.contrastLevel(hex, o.hex), [lab, , mark] = LEVEL[r.level];
-        return `<div class="mx lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${n} on ${o.label}: ${lab}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
-      }).join('');
-      return `<div class="mx-r"><i style="background:${o.hex}"></i><span>${o.label}</span></div>${cells}`;
-    }).join('');
-    return `<div class="matrix" style="grid-template-columns:86px repeat(${cols.length},minmax(0,1fr))"><div></div>${head}${rows}</div>
-      <div class="legend"><span><b>✓</b> Body text</span><span><b>L</b> Large text only</span><span><b>✕</b> Avoid</span><span>Columns: type color</span></div>`;
-  }
-
-  function renderApply() {
-    const order = E.hierarchy(cur.items);
-    $('#apply-body').innerHTML = `
-      <div class="crows${order.length >= 4 ? ' dense' : ''}">${order.map(crow).join('')}</div>
-      <h3 class="sub">Type on color</h3>
-      ${matrixHtml(order)}
-      <div class="exports">
-        <button class="btn" data-action="copy-css">CSS variables</button>
-        <button class="btn" data-action="copy-json">JSON</button>
-        <button class="btn btn-primary" data-action="copy-link">Copy link</button>
-      </div>`;
-  }
-
-  /* ---------- Technical view (drawer) ---------- */
+  /* ---------- Technical view (sheet) ---------- */
   const bar = (label, v) => `<div class="bar"><span>${label}</span><i style="--w:${Math.round(C.clamp(v, 0, 1) * 100)}%"></i><em>${v.toFixed(2)}</em></div>`;
 
   function renderTech() {
@@ -317,7 +279,7 @@
     }).join('');
     const gs = cur.chipItems.filter((i) => i.key === 'grounded'), rs = cur.chipItems.filter((i) => i.key === 'ripe');
     const pairs = [];
-    gs.forEach((g) => rs.forEach((r, k) => pairs.push(`<div class="tcard"><div class="tcard-h">${g.label} ↔ ${r.label}</div>${Object.entries(E.pairCompat(g.c, r.c).parts).map(([n, v]) => bar(n, v)).join('')}</div>`)));
+    gs.forEach((g) => rs.forEach((r) => pairs.push(`<div class="tcard"><div class="tcard-h">${g.label} ↔ ${r.label}</div>${Object.entries(E.pairCompat(g.c, r.c).parts).map(([n, v]) => bar(n, v)).join('')}</div>`)));
     const fgList = [['White', CONFIG.whiteHex], ['Ink', CONFIG.inkHex], ['Evergreen', CONFIG.evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
     const rowsT = cur.items.map((o) => `<tr><td>${o.label}</td>${fgList.map(([n, hex]) => {
       if (hex.toUpperCase() === o.hex.toUpperCase()) return '<td>–</td>';
@@ -361,10 +323,10 @@
 
   /* ---------- exports ---------- */
   function exportData() {
-    const order = E.hierarchy(cur.items), extras = cur.chipItems.map((e) => [e.label, e.hex]);
+    const extras = cur.chipItems.map((e) => [e.label, e.hex]);
     return {
       balance: +S.p.toFixed(3), layout: cur.code, chips: cur.q.chips, recommended: cur.q.recommended,
-      colors: order.map((o) => {
+      colors: cur.ranked.map((o) => {
         const g = E.guidance(o.hex, o.c);
         return { name: o.label, territory: o.key, role: o.role, anchor: o.anchor, hex: o.hex, rgb: o.spec.rgb, cmykApprox: o.spec.cmyk, oklch: o.spec.oklchText,
           guidance: g.tags.map((t) => t.text),
@@ -395,7 +357,7 @@
   function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; fullRender(); }); }
   function fullRender() {
     snapshot();
-    renderComposer(); renderTabs(); renderExploreStatic(); drawField(); renderContext(); renderBuild(); renderApply(); renderTech(); writeHash();
+    renderLeft(); renderStage(); renderInspector(); renderDock(); renderTech(); writeHash();
   }
 
   /* ---------- events ---------- */
@@ -405,6 +367,7 @@
     const a = b.dataset.action, v = b.dataset.v || b.dataset.id;
     if (a === 'layout') { S.picks[cur.z.id] = +v; fullRender(); }
     else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } S.active = v; fullRender(); }
+    else if (a === 'view') { S.view = v; fullRender(); }
     else if (a === 'mix') { S.p = 0.5; fullRender(); }
     else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
     else if (a === 'copy') copy(v);

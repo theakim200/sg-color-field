@@ -10,10 +10,15 @@ Static site, no build step. Open `index.html`, or `python3 -m http.server 8080`.
 Tests: `node tests/engine.test.js`
 
 ## Layout
-One screen, no scrolling: four columns read left to right (1 Choose an expression, 2 Explore color, 3 Build a combination, 4 Apply). Columns fit the viewport height; on very short screens secondary detail (usage tags, notes) is dropped rather than scrolled. Below ~1080px wide the columns stack and the page scrolls.
-OKLCH values, scores and contrast numbers are in the **Technical view** drawer (toggle top right, Esc closes), so the main screen stays in brand language.
+One screen, no scrolling. The colors appear **once, large, on a central stage**; tools float around it:
+- **Left, Expression**: the G-to-R balance handlebar, layout choices for the current zone, how the combination reads, and a key to the stage.
+- **Stage**: each color block carries its role (Dominant / Supporting / Accent, Anchor for Evergreen) and which type works on it (Aa with a body / large / avoid mark). A Blocks / Composition switch shows the same colors as a layout. The faint wash behind the stage follows the dominant color.
+- **Right, selected color**: color field, intensity, HEX check, copyable values and usage guidance for the color selected on the stage.
+- **Bottom dock**: counterpart suggestions from the other territory.
+- **Top bar**: view switch, copy CSS / JSON / link, Technical view.
+OKLCH values, scores and contrast numbers are in the **Technical view** sheet (Esc closes). Below ~1040px wide the tools stack and the page scrolls.
 
-The previous scrolling layout is archived in `archive/` (single self-contained HTML, commit `6e821b5`).
+Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns), each a single self-contained HTML plus a commit hash.
 
 ## Look
 iOS tone: grouped gray background, white cards with soft shadows instead of strokes, large radii, segmented controls, white round slider handles, a translucent header and an Evergreen toggle.
@@ -27,7 +32,7 @@ Type: GT America Compressed (Bold) for display (titles, color names, big numeral
 | `js/territories.js` | Grounded / Ripe as **hue-dependent regions** (keypoint table every 30°, interpolated), membership + depth, `colorAt`, `snapInto`. Brand constants in `CONFIG` |
 | `js/spectrum.js` | The Ripe↔Grounded balance: which chip combinations are allowed in each zone, the 3-chip cap, and the visual area of each chip |
 | `js/engine.js` | Evergreen relationship, Grounded↔Ripe compatibility, counterpart recommendation, contrast levels, brand-use guidance tags, Dominant/Supporting/Accent hierarchy, production values. All thresholds in `PARAMS` |
-| `js/app.js` | UI: Expression → Explore → Build → Apply. Translates engine output into brand language; numbers appear only under **Technical view** |
+| `js/app.js` | UI: stage, tool panels and dock. Translates engine output into brand language; numbers appear only under **Technical view** |
 
 ## How the spec maps to code
 - Territory membership → `territories.membership` (core / edge / outside)
@@ -37,7 +42,7 @@ Type: GT America Compressed (Bold) for display (titles, color names, big numeral
 - Contrast & guidance ("Approved for text", "Use with dark type"…) → `engine.guidance`
 - Roles follow visual area, no fixed ratios → `engine.hierarchy`
 - Multi-chip combinations (every chip vs Evergreen, Grounded×Ripe pairs, same-territory spacing) → `engine.evaluate`; companion chip in the same territory → `engine.companion`
-- Output (HEX/RGB/CMYK/OKLCH, combinations, CSS, JSON, shareable link) → `app.js` Apply
+- Output (HEX/RGB/CMYK/OKLCH, combinations, CSS, JSON, shareable link) → `app.js` (right panel, stage, top bar)
 
 ## The balance handlebar
 Evergreen is always present and never counted. At most **3 other chips**; 3 is possible but flagged *not recommended*.
