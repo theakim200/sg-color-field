@@ -9,76 +9,52 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<a class="skip" href="#explore">Skip to explorer</a>
-
-<header class="top">
-  <div class="top-row">
+<div class="app">
+  <header class="top">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
-      <div><b>Color Field</b><small>Sweetgreen color guideline</small></div>
+      <div><b>Color Field</b><small>Explore new color without leaving the Sweetgreen world.</small></div>
     </div>
-    <nav class="steps" aria-label="Steps">
-      <a href="#expression"><i>1</i>Expression</a>
-      <a href="#explore"><i>2</i>Explore</a>
-      <a href="#build"><i>3</i>Build</a>
-      <a href="#apply"><i>4</i>Apply</a>
-    </nav>
+    <div class="spectrum" aria-hidden="true">
+      <div class="spectrum-bar" id="spectrum-bar"></div>
+      <div class="spectrum-labels"><span>Grounded</span><span>← Evergreen →</span><span>Ripe</span></div>
+    </div>
     <div class="top-actions">
       <label class="switch" title="Show OKLCH values, scores and contrast numbers">
         <input id="tech-toggle" type="checkbox"><span class="track"></span><span>Technical view</span>
       </label>
     </div>
-  </div>
-  <div class="spectrum" aria-hidden="true">
-    <div class="spectrum-bar" id="spectrum-bar"></div>
-    <div class="spectrum-labels"><span>Grounded</span><span>← Evergreen →</span><span>Ripe</span></div>
-  </div>
-</header>
+  </header>
 
-<main>
-  <section class="hero">
-    <h1>Explore new color without leaving the Sweetgreen world.</h1>
-    <p>A living color system that moves from Grounded to Ripe, always anchored by Evergreen. Choose an expression, explore within it, and leave with colors <em>and</em> how to use them.</p>
-  </section>
-
-  <section id="expression" class="panel">
-    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>Slide between Grounded and Ripe. Evergreen stays in the middle, always.</p></div></header>
-    <div class="composer">
-      <div class="comp-left">
-        <input id="season" class="season" type="text" maxlength="32" placeholder="SEASONAL" autocomplete="off" aria-label="Season or campaign name (optional)">
+  <main class="flow">
+    <section id="expression" class="col" aria-labelledby="h-expression">
+      <header class="col-head"><span class="num">1</span><div><h2 id="h-expression">Choose an expression</h2><p>Slide between Grounded and Ripe.</p></div></header>
+      <div class="col-body">
         <div class="bal">
-          <div class="bal-title">Balance</div>
           <div class="bal-row"><span class="bal-end">G</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Grounded and Ripe"><span class="bal-end">R</span></div>
           <div class="bal-zones" id="bal-zones" aria-hidden="true"></div>
         </div>
         <div class="layouts" id="layouts" role="radiogroup" aria-label="Color chip layout"></div>
         <div id="count-note" class="count-note"></div>
-      </div>
-      <div class="stack-col">
-        <div class="stack" id="stack" role="group" aria-label="Color balance preview">
-          <div class="empty" data-empty="top"></div>
-          <button class="slot" data-id="r1" data-action="chip"></button>
-          <button class="slot" data-id="r2" data-action="chip"></button>
-          <button class="slot slot-e" data-id="e" data-action="chip"></button>
-          <button class="slot" data-id="g1" data-action="chip"></button>
-          <button class="slot" data-id="g2" data-action="chip"></button>
-          <div class="empty" data-empty="bottom"></div>
+        <div class="stack-wrap">
+          <div class="stack" id="stack" role="group" aria-label="Color balance preview">
+            <div class="empty" data-empty="top"></div>
+            <button class="slot" data-id="r1" data-action="chip"></button>
+            <button class="slot" data-id="r2" data-action="chip"></button>
+            <button class="slot slot-e" data-id="e" data-action="chip"></button>
+            <button class="slot" data-id="g1" data-action="chip"></button>
+            <button class="slot" data-id="g2" data-action="chip"></button>
+            <div class="empty" data-empty="bottom"></div>
+          </div>
+          <div class="ax-line" aria-hidden="true"></div>
         </div>
-        <p class="stack-hint">Select a color to edit it in step 2.</p>
       </div>
-      <div class="axis-col" aria-hidden="true">
-        <div class="ax-text ax-top">Vibrant / Expressive / Juicy / Abundant / Full</div>
-        <div class="ax-line"></div>
-        <div class="ax-text ax-bot">Rooted / Substantial / Calm / Savory / Earthy</div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="explore" class="panel">
-    <header class="panel-head"><span class="num">2</span><div><h2>Explore color</h2><p id="explore-sub"></p></div></header>
-    <div class="tabs" id="tabs" role="tablist"></div>
-    <div class="explore-grid">
-      <div class="field-col">
+    <section id="explore" class="col" aria-labelledby="h-explore">
+      <header class="col-head"><span class="num">2</span><div><h2 id="h-explore">Explore color</h2><p id="explore-sub"></p></div></header>
+      <div class="col-body">
+        <div class="tabs" id="tabs" role="tablist"></div>
         <div class="field-wrap">
           <canvas id="field" width="360" height="200" tabindex="0" role="slider" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection."></canvas>
           <div class="marker" id="marker"></div>
@@ -86,33 +62,33 @@
           <span class="axis axis-y">Lighter ↑</span><span class="axis axis-x">Hue →</span>
         </div>
         <div class="slider-row">
-          <label for="intensity" id="intensity-label"></label>
+          <div class="slider-top"><label for="intensity" id="intensity-label"></label></div>
           <div class="slider-body"><span id="intensity-lo"></span><input id="intensity" type="range" min="0" max="100" step="1"><span id="intensity-hi"></span></div>
         </div>
         <div class="test">
-          <label for="hex-test">Have a color in mind?</label>
-          <div class="test-row"><input id="hex-test" type="text" placeholder="#E4572E" spellcheck="false" autocomplete="off"><button data-action="test-hex" class="btn">Check</button></div>
+          <div class="test-row"><input id="hex-test" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button data-action="test-hex" class="btn">Check</button></div>
           <div id="test-msg" class="test-msg" role="status" aria-live="polite"></div>
         </div>
+        <aside class="context" id="context" aria-live="polite"></aside>
       </div>
-      <aside class="context" id="context" aria-live="polite"></aside>
-    </div>
-  </section>
+    </section>
 
-  <section id="build" class="panel">
-    <header class="panel-head"><span class="num">3</span><div><h2>Build a combination</h2><p>Counterparts are drawn only from approved territory and judged against Evergreen.</p></div></header>
-    <div id="build-body"></div>
-  </section>
+    <section id="build" class="col" aria-labelledby="h-build">
+      <header class="col-head"><span class="num">3</span><div><h2 id="h-build">Build a combination</h2><p>Judged against Evergreen.</p></div></header>
+      <div class="col-body" id="build-body"></div>
+    </section>
 
-  <section id="apply" class="panel">
-    <header class="panel-head"><span class="num">4</span><div><h2>Apply</h2><p>Not just what the colors are, but how to use them.</p></div></header>
-    <div id="apply-body"></div>
-  </section>
-</main>
+    <section id="apply" class="col" aria-labelledby="h-apply">
+      <header class="col-head"><span class="num">4</span><div><h2 id="h-apply">Apply</h2><p>How to use these colors.</p></div></header>
+      <div class="col-body" id="apply-body"></div>
+    </section>
+  </main>
+</div>
 
-<footer class="foot">
-  <p>Territory boundaries are provisional until calibrated against Sweetgreen's approved samples. CMYK values are indicative only; confirm with press proofs.</p>
-</footer>
+<aside class="drawer" id="drawer" aria-label="Technical view" hidden>
+  <header class="drawer-head"><h3>Under the hood</h3><button class="mini" data-action="close-tech" aria-label="Close technical view">Close</button></header>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/color.js"></script>

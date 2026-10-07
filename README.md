@@ -9,6 +9,12 @@ A tool for exploring new color without leaving the Sweetgreen world.
 Static site, no build step. Open `index.html`, or `python3 -m http.server 8080`.
 Tests: `node tests/engine.test.js`
 
+## Layout
+One screen, no scrolling: four columns read left to right (1 Choose an expression, 2 Explore color, 3 Build a combination, 4 Apply). Columns fit the viewport height; on very short screens secondary detail (usage tags, notes) is dropped rather than scrolled. Below ~1080px wide the columns stack and the page scrolls.
+OKLCH values, scores and contrast numbers are in the **Technical view** drawer (toggle top right, Esc closes), so the main screen stays in brand language.
+
+The previous scrolling layout is archived in `archive/` (single self-contained HTML, commit `6e821b5`).
+
 ## Architecture
 | File | Role |
 |---|---|
