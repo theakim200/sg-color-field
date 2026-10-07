@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweetgreen Color Field (v2, iOS four columns)</title>
+<meta name="description" content="Explore new color without leaving the Sweetgreen world.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2a14 14 0 1 1-14 14V2z%27 fill=%27%2300A810%27/%3E%3C/svg%3E">
+<style>
+
+:root {
+  --ev: #00A810;   /* Evergreen, PANTONE 2423 C */
+  --ink: #111111;
+  --white: #FFFFFF;
+  /* iOS system grays */
+  --bg: #F2F2F7;       /* grouped background */
+  --fill: #F2F2F7;    /* tile fill on white cards */
+  --fill-2: #E5E5EA;
+  --fill-3: #D1D1D6;
+  --gray-4: #AEAEB2;
+  --muted: #8E8E93;
+  --muted-2: #636366;
+
+  /* Soft elevation replaces strokes */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .06);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .06);
+  --shadow-raised: 0 1px 1px rgba(0, 0, 0, .06), 0 3px 10px rgba(0, 0, 0, .14);
+  --hair: 0 0 0 .5px rgba(0, 0, 0, .18); /* only for small color dots, so white stays visible */
+
+  --r-card: 22px; --r-tile: 14px; --r-sm: 10px;
+
+  /* Display: GT America Compressed (Trial: Bold / Black only). Text: system sans (SF on Apple devices).
+     When a lighter GT America cut is available, set --font-text to it. */
+  --font-display: "GT America Compressed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 13px/1.4 var(--font-text); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; -webkit-tap-highlight-color: transparent; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; margin: 0; letter-spacing: .005em; }
+:focus-visible { outline: 3px solid rgba(0, 168, 16, .5); outline-offset: 2px; }
+input { font: inherit; color: inherit; }
+
+/* frame: translucent header + four columns that always fit the viewport */
+.app { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.top { display: flex; align-items: center; gap: 24px; padding: 10px 22px; background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); box-shadow: 0 4px 24px rgba(0, 0, 0, .05); position: relative; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 10px; flex: none; }
+.brand b { display: block; font: 700 21px/1 var(--font-display); }
+.brand small { color: var(--muted); font-size: 11.5px; }
+.brand-mark { width: 26px; height: 26px; border-radius: 50% 50% 50% 5px; background: var(--ev); }
+.spectrum { flex: 1; min-width: 160px; max-width: 520px; margin: 0 auto; }
+.spectrum-bar { height: 6px; border-radius: 99px; transition: background .2s; }
+.spectrum-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.top-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.switch { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted-2); cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; }
+.track { width: 51px; height: 31px; border-radius: 99px; background: var(--fill-2); position: relative; transition: background .25s; flex: none; }
+.track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
+.switch input:checked + .track { background: var(--ev); } .switch input:checked + .track::after { transform: translateX(20px); }
+.switch input:focus-visible + .track { outline: 3px solid rgba(0, 168, 16, .5); outline-offset: 2px; }
+
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 16px 22px 20px; min-height: 0; }
+.col { position: relative; background: #fff; border-radius: var(--r-card); box-shadow: var(--shadow-card); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.col + .col::before { content: ""; position: absolute; left: -14px; top: 30px; width: 9px; height: 9px; border-top: 2.5px solid var(--gray-4); border-right: 2.5px solid var(--gray-4); transform: rotate(45deg); border-radius: 1px; }
+.col-head { display: flex; gap: 10px; align-items: center; padding: 16px 16px 10px; flex: none; }
+.col-head h2 { font-size: 23px; line-height: 1.05; }
+.col-head p { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.3; }
+.num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font: 600 13px var(--font-text); }
+.col-body { flex: 1; min-height: 0; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; overflow: auto; scrollbar-width: thin; }
+.sub { font: 600 11.5px var(--font-text); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
+.sub small { font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+
+/* shared bits */
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+.tag-good { background: rgba(0, 168, 16, .16); color: var(--ink); }
+.tag-info { background: var(--fill); color: var(--muted-2); }
+.tag-warn { background: var(--fill-2); color: var(--ink); }
+.tag-bad { background: var(--ink); color: #fff; }
+.mono { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.btn { background: var(--fill); padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; transition: background .15s, transform .1s; }
+.btn:hover { background: var(--fill-2); } .btn:active { transform: scale(.97); }
+.btn-primary { background: var(--ink); color: #fff; } .btn-primary:hover { background: #333; }
+.mini { background: var(--fill); padding: 2px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; color: var(--ink); }
+.mini:hover { background: var(--fill-2); }
+
+/* 1. expression */
+.bal-row { display: flex; align-items: center; gap: 12px; background: var(--fill); border-radius: var(--r-tile); padding: 10px 14px; }
+.bal-end { font: 700 17px var(--font-display); color: var(--muted); }
+input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; margin: 0; cursor: grab; min-width: 0; height: 28px; }
+input[type=range]:active { cursor: grabbing; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; background: var(--fill-3); border-radius: 4px; }
+input[type=range]::-moz-range-track { height: 4px; background: var(--fill-3); border-radius: 4px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; margin-top: -11px; box-shadow: var(--shadow-raised); }
+input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; box-shadow: var(--shadow-raised); }
+#balance { flex: 1; }
+.bal-zones { display: flex; margin: 6px 14px 0 38px; }
+.bal-zones .zone { flex: 1; text-align: center; font-size: 10.5px; line-height: 1.3; color: var(--gray-4); padding: 1px 0; }
+.bal-zones .zone.on { color: var(--ink); font-weight: 700; }
+.layouts { display: flex; flex-direction: column; gap: 2px; background: var(--fill); padding: 3px; border-radius: var(--r-tile); }
+.layouts:empty { display: none; }
+.layout { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left; border-radius: 11px; padding: 7px 10px; font-size: 13px; transition: background .2s, box-shadow .2s; }
+.layout.on { background: #fff; box-shadow: var(--shadow-sm); }
+.layout .dots { display: flex; gap: 3px; flex: none; }
+.layout .dots i { width: 13px; height: 13px; border-radius: 50%; box-shadow: var(--hair); }
+.layout .lab { flex: 1 1 100px; min-width: 0; font-weight: 500; }
+.layout .lead { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+.count-note { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.stack-wrap { flex: 1; min-height: 140px; display: flex; gap: 10px; }
+.stack { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.stack .slot, .stack .empty { flex: 0 1 0; min-height: 0; margin: 0; padding: 0; overflow: hidden; border-radius: 20px; opacity: 0; transition: flex-grow .45s cubic-bezier(.3, .7, .2, 1), margin .4s, opacity .25s, height .4s, box-shadow .25s, transform .25s; }
+.stack .slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; cursor: pointer; }
+.stack .slot.on { opacity: 1; margin-top: 10px; }
+.stack .slot.first { margin-top: 0; }
+.stack .slot.sel { box-shadow: 0 10px 24px rgba(0, 0, 0, .28); transform: scale(1.012); position: relative; z-index: 1; }
+.stack .slot-e { cursor: default; }
+.stack .empty { flex: none; height: 0; background: var(--fill-2); border-radius: 99px; }
+.stack .empty.on { opacity: 1; height: 8px; }
+.stack .empty[data-empty=top].on { margin-bottom: 10px; } .stack .empty[data-empty=bottom].on { margin-top: 10px; }
+.slot .b-label { font: 700 clamp(15px, 1.5vw, 22px)/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.slot .b-hex { font-size: 11px; font-weight: 500; opacity: .75; }
+.stack .slot.compact { flex-direction: row; gap: 8px; } .stack .slot.compact .b-label { font-size: 14px; } .stack .slot.compact .b-hex { display: none; }
+.ax-line { flex: none; width: 1.5px; background: var(--fill-3); position: relative; margin: 4px 4px 4px 0; border-radius: 2px; }
+.ax-line::before, .ax-line::after { content: ""; position: absolute; left: -3.25px; border: 4px solid transparent; }
+.ax-line::before { top: -3px; border-bottom: 6px solid var(--fill-3); border-top: 0; }
+.ax-line::after { bottom: -3px; border-top: 6px solid var(--fill-3); border-bottom: 0; }
+
+/* 2. explore */
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; background: var(--fill); padding: 3px; border-radius: 99px; align-self: flex-start; }
+.tabs[hidden] { display: none; }
+.tabs button { padding: 5px 14px 5px 8px; border-radius: 99px; display: flex; align-items: center; gap: 7px; color: var(--muted-2); font-size: 13px; font-weight: 500; transition: background .2s, box-shadow .2s; }
+.tabs button i { width: 14px; height: 14px; border-radius: 50%; box-shadow: var(--hair); }
+.tabs button.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+.field-wrap { position: relative; border-radius: var(--r-tile); overflow: hidden; background: var(--fill); box-shadow: var(--shadow-sm); flex: 1 1 140px; min-height: 120px; }
+#field { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.marker, .ev-marker { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px #fff, 0 3px 10px rgba(0, 0, 0, .35); pointer-events: none; }
+.ev-marker { width: 12px; height: 12px; margin: -6px 0 0 -6px; box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0, 0, 0, .3); }
+.ev-marker span { position: absolute; left: 14px; top: -4px; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); background: rgba(255, 255, 255, .88); padding: 2px 6px; border-radius: 6px; box-shadow: var(--shadow-sm); }
+.axis { position: absolute; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: rgba(0, 0, 0, .35); pointer-events: none; }
+.axis-y { left: 8px; top: 6px; } .axis-x { right: 8px; bottom: 6px; }
+.slider-row label { font-size: 13px; font-weight: 600; }
+.slider-body { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.slider-body input { flex: 1; }
+.test-row { display: flex; gap: 8px; }
+.test-row input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: var(--r-sm); border: 0; background: var(--fill); font-size: 13px; }
+.test-row input::placeholder { color: var(--gray-4); }
+.test-row input:focus { outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(0, 168, 16, .35), var(--shadow-sm); }
+.test-msg { margin-top: 6px; font-size: 12px; color: var(--muted-2); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.test-msg:empty { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.chip i { width: 13px; height: 13px; border-radius: 50%; box-shadow: var(--hair); }
+.context { background: var(--fill); border-radius: var(--r-tile); padding: 8px; margin-top: auto; flex: none; }
+.stage { display: flex; height: clamp(56px, 10vh, 96px); border-radius: 11px; overflow: hidden; }
+.stage-ev { flex: 0 0 32%; padding: 7px 9px; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: flex-end; }
+.stage-sel { flex: 1; padding: 7px 11px; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.stage-aa { font: 700 clamp(26px, 4.6vh, 44px)/1 var(--font-display); letter-spacing: 0; text-transform: none; }
+.hexline { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.hexline b { font: 700 19px var(--font-display); letter-spacing: .02em; }
+.depth { color: var(--muted); font-size: 12px; margin-left: auto; }
+.note { margin: 5px 0 0; font-size: 12.5px; color: var(--muted-2); }
+.ctx-tags { margin-top: 6px; }
+
+/* 3. build */
+.roles { display: flex; flex-direction: column; gap: 5px; }
+.role { display: flex; align-items: center; gap: 10px; background: var(--fill); border-radius: 12px; padding: 6px 10px; }
+.role-sw { flex: none; width: 26px; height: 26px; border-radius: 8px; box-shadow: var(--hair); }
+.role b { font: 700 15px var(--font-display); letter-spacing: .01em; } .role-name { color: var(--muted-2); font-size: 12px; }
+.role small { display: block; color: var(--muted); font-size: 11px; line-height: 1.25; }
+.overall { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--muted-2); }
+.recs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.rec { text-align: left; background: var(--fill); border-radius: 12px; padding: 6px; display: flex; flex-direction: column; gap: 3px; min-width: 0; transition: background .2s, box-shadow .2s, transform .1s; }
+.rec:hover { background: var(--fill-2); } .rec:active { transform: scale(.98); }
+.rec.on { background: #fff; box-shadow: var(--shadow-raised); }
+.rec-sw { height: clamp(26px, 4.4vh, 44px); border-radius: 8px; position: relative; overflow: hidden; }
+.rec-sw i { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; }
+.rec b { font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.rec-why { font-size: 11px; line-height: 1.25; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.invite { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; background: var(--fill); padding: 11px 13px; border-radius: var(--r-tile); font-size: 12.5px; color: var(--muted-2); }
+.poster { flex: 1; min-height: 110px; display: grid; gap: 3px; border-radius: var(--r-tile); overflow: hidden; box-shadow: var(--shadow-sm); }
+.poster .b { padding: 11px 13px; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; min-height: 0; overflow: hidden; }
+.poster small { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .85; margin-bottom: auto; }
+.poster h4 { font: 700 clamp(18px, 1.9vw, 28px)/1.02 var(--font-display); }
+.poster p { margin: 0; font-size: 11.5px; opacity: .92; }
+.poster .pill { align-self: flex-start; white-space: nowrap; background: rgba(255, 255, 255, .22); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+.poster.n2 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.poster.n3, .poster.n4 { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+.poster.n3 .b-dominant, .poster.n4 .b-dominant { grid-row: 1 / -1; }
+.poster.n3 .b:not(.b-dominant), .poster.n4 .b:not(.b-dominant) { grid-column: 2; }
+
+/* 4. apply */
+.crows { display: flex; flex-direction: column; gap: 7px; }
+.crow { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; align-items: start; border-radius: var(--r-tile); padding: 8px; background: var(--fill); }
+.crow-sw { height: 100%; min-height: 44px; border-radius: 9px; box-shadow: var(--hair); }
+.crow-title { display: flex; align-items: baseline; gap: 7px; }
+.crow-title b { font: 700 16px var(--font-display); letter-spacing: .01em; } .crow-title span { font-size: 11.5px; color: var(--muted); }
+.crow-vals { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 1px 8px; margin-top: 3px; }
+.val { display: flex; align-items: baseline; gap: 6px; text-align: left; font-size: 12px; font-weight: 500; min-width: 0; padding: 1px 0; }
+.val span { color: var(--muted); font-size: 9.5px; font-weight: 600; width: 33px; flex: none; text-transform: uppercase; letter-spacing: .03em; }
+.val code { font: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.val:hover code { text-decoration: underline; }
+.crow-tags { margin-top: 4px; }
+.crows.dense .crow-tags { display: none; }
+.matrix { display: grid; gap: 4px; align-items: center; }
+.mx-h { font-size: 10px; color: var(--muted); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.1; }
+.mx-h i { width: 12px; height: 12px; border-radius: 50%; box-shadow: var(--hair); }
+.mx-r { font-size: 11.5px; color: var(--muted-2); display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mx-r i { flex: none; width: 12px; height: 12px; border-radius: 50%; box-shadow: var(--hair); }
+.mx-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mx { position: relative; height: clamp(26px, 4.2vh, 38px); border-radius: 9px; display: grid; place-items: center; font: 700 16px var(--font-display); }
+.mx.same { background: repeating-linear-gradient(45deg, var(--fill), var(--fill) 4px, #fafafc 4px, #fafafc 8px); }
+.mx .m { position: absolute; right: 4px; bottom: 1px; font: 700 9.5px var(--font-text); }
+.mx.lvl-fail .a { opacity: .4; text-decoration: line-through; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+.legend b { font-weight: 700; color: var(--ink); }
+.exports { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 4px; }
+
+/* technical drawer: an iOS-style sheet */
+.drawer { position: fixed; top: 10px; right: 10px; bottom: 10px; width: min(440px, calc(100vw - 20px)); background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border-radius: 26px; box-shadow: 0 20px 60px rgba(0, 0, 0, .25), 0 2px 8px rgba(0, 0, 0, .08); z-index: 30; display: flex; flex-direction: column; }
+.drawer[hidden] { display: none; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 10px; }
+.drawer-head h3 { font-size: 26px; }
+.drawer-body { flex: 1; overflow: auto; padding: 0 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+.drawer h4 { font: 600 11.5px var(--font-text); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 7px; }
+.tcard { border-radius: var(--r-tile); padding: 10px 12px; background: var(--fill); margin-bottom: 8px; }
+.tcard-h { display: flex; align-items: center; gap: 8px; font: 700 16px var(--font-display); }
+.tcard-h i { width: 16px; height: 16px; border-radius: 50%; box-shadow: var(--hair); }
+.tcard-h .mono { font: 500 12px var(--font-text); }
+.bar { display: grid; grid-template-columns: 104px 1fr 36px; gap: 8px; align-items: center; font-size: 11.5px; color: var(--muted-2); }
+.bar > i { height: 5px; border-radius: 4px; background: var(--fill-2); position: relative; overflow: hidden; }
+.bar > i::after { content: ""; position: absolute; inset: 0; width: var(--w); background: var(--ink); border-radius: 4px; }
+.bar em { font-style: normal; font-size: 11.5px; text-align: right; }
+.ttable { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.ttable td, .ttable th { padding: 4px 5px; text-align: right; } .ttable th { color: var(--muted); font-weight: 600; } .ttable tr + tr td { box-shadow: 0 -1px 0 rgba(0, 0, 0, .05); }
+.ttable th:first-child, .ttable td:first-child { text-align: left; }
+#slice { width: 100%; border-radius: var(--r-tile); background: #fff; box-shadow: var(--shadow-sm); }
+.drawer p { margin: 0; font-size: 12.5px; color: var(--muted-2); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: rgba(28, 28, 30, .92); color: #fff; padding: 10px 18px; border-radius: 99px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: .25s; z-index: 40; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* short screens: drop secondary detail instead of scrolling */
+@media (max-height: 860px) {
+  .crow-tags, .role small, .note { display: none; }
+}
+@media (max-height: 800px) {
+  .rec-why { -webkit-line-clamp: 1; } .rec-sw { height: 24px; } .poster { min-height: 90px; } .role { padding: 4px 10px; }
+  .mx { height: 24px; } .crow-sw { min-height: 34px; } .col-body { gap: 8px; } .crow { padding: 6px; }
+}
+@media (max-height: 800px) {
+  .crows.dense .crow-vals .val:nth-child(n+3) { display: none; }
+}
+@media (max-height: 700px) {
+  .brand small, .col-head p { display: none; }
+  .crow-vals .val:nth-child(n+3) { display: none; }
+}
+
+/* narrow screens: columns stack and the page scrolls (the one place it must) */
+@media (max-width: 1080px) {
+  body { overflow: auto; }
+  .app { height: auto; display: block; }
+  .flow { grid-template-columns: 1fr; padding: 12px; }
+  .col + .col::before { left: 50%; top: -14px; transform: rotate(135deg) translateX(5px); }
+  .col-body { overflow: visible; }
+  .stack-wrap { min-height: 360px; }
+  .top { flex-wrap: wrap; gap: 10px; } .brand small { display: none; }
+  .crow-tags, .role small, .note { display: block; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div><b>Color Field</b><small>Explore new color without leaving the Sweetgreen world.</small></div>
+    </div>
+    <div class="spectrum" aria-hidden="true">
+      <div class="spectrum-bar" id="spectrum-bar"></div>
+      <div class="spectrum-labels"><span>Grounded</span><span>← Evergreen →</span><span>Ripe</span></div>
+    </div>
+    <div class="top-actions">
+      <label class="switch" title="Show OKLCH values, scores and contrast numbers">
+        <input id="tech-toggle" type="checkbox"><span class="track"></span><span>Technical view</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="flow">
+    <section id="expression" class="col" aria-labelledby="h-expression">
+      <header class="col-head"><span class="num">1</span><div><h2 id="h-expression">Choose an expression</h2><p>Slide between Grounded and Ripe.</p></div></header>
+      <div class="col-body">
+        <div class="bal">
+          <div class="bal-row"><span class="bal-end">G</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Grounded and Ripe"><span class="bal-end">R</span></div>
+          <div class="bal-zones" id="bal-zones" aria-hidden="true"></div>
+        </div>
+        <div class="layouts" id="layouts" role="radiogroup" aria-label="Color chip layout"></div>
+        <div id="count-note" class="count-note"></div>
+        <div class="stack-wrap">
+          <div class="stack" id="stack" role="group" aria-label="Color balance preview">
+            <div class="empty" data-empty="top"></div>
+            <button class="slot" data-id="r1" data-action="chip"></button>
+            <button class="slot" data-id="r2" data-action="chip"></button>
+            <button class="slot slot-e" data-id="e" data-action="chip"></button>
+            <button class="slot" data-id="g1" data-action="chip"></button>
+            <button class="slot" data-id="g2" data-action="chip"></button>
+            <div class="empty" data-empty="bottom"></div>
+          </div>
+          <div class="ax-line" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="explore" class="col" aria-labelledby="h-explore">
+      <header class="col-head"><span class="num">2</span><div><h2 id="h-explore">Explore color</h2><p id="explore-sub"></p></div></header>
+      <div class="col-body">
+        <div class="tabs" id="tabs" role="tablist"></div>
+        <div class="field-wrap">
+          <canvas id="field" width="360" height="200" tabindex="0" role="slider" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection."></canvas>
+          <div class="marker" id="marker"></div>
+          <div class="ev-marker" id="ev-marker"><span>Evergreen</span></div>
+          <span class="axis axis-y">Lighter ↑</span><span class="axis axis-x">Hue →</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><label for="intensity" id="intensity-label"></label></div>
+          <div class="slider-body"><span id="intensity-lo"></span><input id="intensity" type="range" min="0" max="100" step="1"><span id="intensity-hi"></span></div>
+        </div>
+        <div class="test">
+          <div class="test-row"><input id="hex-test" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button data-action="test-hex" class="btn">Check</button></div>
+          <div id="test-msg" class="test-msg" role="status" aria-live="polite"></div>
+        </div>
+        <aside class="context" id="context" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section id="build" class="col" aria-labelledby="h-build">
+      <header class="col-head"><span class="num">3</span><div><h2 id="h-build">Build a combination</h2><p>Judged against Evergreen.</p></div></header>
+      <div class="col-body" id="build-body"></div>
+    </section>
+
+    <section id="apply" class="col" aria-labelledby="h-apply">
+      <header class="col-head"><span class="num">4</span><div><h2 id="h-apply">Apply</h2><p>How to use these colors.</p></div></header>
+      <div class="col-body" id="apply-body"></div>
+    </section>
+  </main>
+</div>
+
+<aside class="drawer" id="drawer" aria-label="Technical view" hidden>
+  <header class="drawer-head"><h3>Under the hood</h3><button class="mini" data-action="close-tech" aria-label="Close technical view">Close</button></header>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Color math: OKLCH <-> sRGB, gamut fitting, distance, contrast (WCAG + APCA).
+   Pure functions, no DOM. Attaches to the global SG namespace (works in browser and Node). */
+(function (root) {
+  const SG = (root.SG = root.SG || {});
+  const RAD = Math.PI / 180;
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ramp = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
+  const hueDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+
+  const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const fromLinear = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+
+  function oklchToLinear({ L, C, h }) {
+    const a = C * Math.cos(h * RAD), b = C * Math.sin(h * RAD);
+    const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+    const m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+    const s = Math.pow(L - 0.0894841775 * a - 1.291485548 * b, 3);
+    return [
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ];
+  }
+
+  function linearToOklch([r, g, b]) {
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+    const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+    const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    const C = Math.hypot(a, bb);
+    let h = Math.atan2(bb, a) / RAD;
+    if (h < 0) h += 360;
+    return { L, C, h: C < 1e-4 ? 0 : h };
+  }
+
+  const inGamut = (lin, eps = 1e-4) => lin.every((v) => v >= -eps && v <= 1 + eps);
+
+  /** Reduce chroma (hue and lightness fixed) until the color fits inside sRGB. */
+  function fitToGamut(c) {
+    if (inGamut(oklchToLinear(c))) return { L: c.L, C: c.C, h: c.h };
+    let lo = 0, hi = c.C;
+    for (let i = 0; i < 22; i++) {
+      const mid = (lo + hi) / 2;
+      if (inGamut(oklchToLinear({ L: c.L, C: mid, h: c.h }))) lo = mid; else hi = mid;
+    }
+    return { L: c.L, C: lo, h: c.h };
+  }
+
+  function oklchToRgb8(c) {
+    const f = fitToGamut(c);
+    return oklchToLinear(f).map((v) => Math.round(clamp(fromLinear(clamp(v, 0, 1)), 0, 1) * 255));
+  }
+
+  const hex2 = (n) => n.toString(16).padStart(2, '0');
+  const toHex = (c) => '#' + oklchToRgb8(c).map(hex2).join('').toUpperCase();
+
+  function parseHex(hex) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim());
+    if (!m) return null;
+    let s = m[1];
+    if (s.length === 3) s = s.split('').map((x) => x + x).join('');
+    return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16));
+  }
+  function fromHex(hex) {
+    const rgb = parseHex(hex);
+    return rgb ? linearToOklch(rgb.map((v) => toLinear(v / 255))) : null;
+  }
+
+  function deltaE(a, b) {
+    const ax = a.C * Math.cos(a.h * RAD), ay = a.C * Math.sin(a.h * RAD);
+    const bx = b.C * Math.cos(b.h * RAD), by = b.C * Math.sin(b.h * RAD);
+    return Math.hypot(a.L - b.L, ax - bx, ay - by);
+  }
+
+  function wcag(fgHex, bgHex) {
+    const Y = (hex) => { const [r, g, b] = parseHex(hex).map((v) => toLinear(v / 255)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const [hi, lo] = [Y(fgHex), Y(bgHex)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  /** APCA-W3 0.98G-4g. Returns signed Lc (positive = dark text on light bg). */
+  function apca(fgHex, bgHex) {
+    const Y = (hex) => {
+      const [r, g, b] = parseHex(hex).map((v) => Math.pow(v / 255, 2.4));
+      const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b;
+      return y >= 0.022 ? y : y + Math.pow(0.022 - y, 1.414);
+    };
+    const yt = Y(fgHex), yb = Y(bgHex);
+    if (Math.abs(yb - yt) < 0.0005) return 0;
+    const s = yb > yt ? (Math.pow(yb, 0.56) - Math.pow(yt, 0.57)) * 1.14 : (Math.pow(yb, 0.65) - Math.pow(yt, 0.62)) * 1.14;
+    if (Math.abs(s) < 0.1) return 0;
+    return (s > 0 ? s - 0.027 : s + 0.027) * 100;
+  }
+
+  /** Naive device-independent CMYK. Indicative only; real print values need a press profile. */
+  function cmyk(hex) {
+    const [r, g, b] = parseHex(hex).map((v) => v / 255);
+    const k = 1 - Math.max(r, g, b);
+    if (k >= 1) return [0, 0, 0, 100];
+    return [(1 - r - k) / (1 - k), (1 - g - k) / (1 - k), (1 - b - k) / (1 - k), k].map((v) => Math.round(v * 100));
+  }
+
+  const oklchString = (c) => `oklch(${(c.L * 100).toFixed(1)}% ${c.C.toFixed(3)} ${c.h.toFixed(1)})`;
+
+  SG.color = { clamp, lerp, ramp, hueDiff, oklchToLinear, linearToOklch, fitToGamut, oklchToRgb8, toHex, parseHex, fromHex, deltaE, wcag, apca, cmyk, oklchString };
+  if (typeof module !== 'undefined') module.exports = SG.color;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Territory definitions: Grounded and Ripe as irregular, hue-dependent regions of OKLCH space.
+   Each territory is a table of keypoints every 30 degrees of hue: [hue, Lmin, Lmax, Cmin, Cmax].
+   Bounds between keypoints are interpolated, so the region is NOT one rectangle.
+
+   PROVISIONAL: these values are a seed, set from general color knowledge, not from Sweetgreen's
+   approved samples. Methodology: Visual -> Sample -> Measure -> Rule. Replace the tables with
+   values measured from the approved/borderline/outside sample set (see README). */
+(function (root) {
+  const SG = root.SG;
+  const { clamp, lerp, hueDiff, fitToGamut, fromHex } = SG.color;
+
+  const CONFIG = {
+    evergreenHex: '#00A810', // PANTONE 2423 C, RGB 0/168/16. Single source for the brand anchor
+    inkHex: '#111111',        // dark type color used in contrast tests (assumed; confirm)
+    whiteHex: '#FFFFFF',
+    coreDepth: 0.15,          // inside by >= 15% of the local range = "core"; 0..15% = "edge"
+  };
+
+  //                 hue   Lmin  Lmax  Cmin  Cmax
+  const GROUNDED = [
+    [0,   0.38, 0.62, 0.060, 0.130],
+    [30,  0.38, 0.64, 0.065, 0.135],
+    [60,  0.45, 0.72, 0.065, 0.115],
+    [90,  0.55, 0.80, 0.065, 0.110],
+    [120, 0.45, 0.76, 0.055, 0.120],
+    [150, 0.38, 0.72, 0.050, 0.105],
+    [180, 0.38, 0.70, 0.040, 0.085],
+    [210, 0.38, 0.72, 0.040, 0.085],
+    [240, 0.36, 0.70, 0.040, 0.095],
+    [270, 0.36, 0.66, 0.045, 0.105],
+    [300, 0.36, 0.64, 0.050, 0.105],
+    [330, 0.37, 0.63, 0.055, 0.115],
+  ];
+  const RIPE = [
+    [0,   0.56, 0.72, 0.170, 0.250],
+    [30,  0.62, 0.73, 0.160, 0.225],
+    [60,  0.70, 0.80, 0.135, 0.175],
+    [90,  0.82, 0.91, 0.110, 0.160],
+    [120, 0.70, 0.88, 0.150, 0.210],
+    [150, 0.68, 0.86, 0.150, 0.220],
+    [180, 0.66, 0.84, 0.100, 0.135],
+    [210, 0.60, 0.78, 0.090, 0.130],
+    [240, 0.55, 0.72, 0.120, 0.160],
+    [270, 0.46, 0.64, 0.160, 0.260],
+    [300, 0.50, 0.70, 0.150, 0.280],
+    [330, 0.56, 0.76, 0.190, 0.270],
+  ];
+
+  const TERRITORIES = {
+    grounded: {
+      key: 'grounded', label: 'Grounded', table: GROUNDED,
+      character: ['Rooted', 'Substantial', 'Calm', 'Tempered', 'Elemental'],
+      slider: ['Tempered', 'Fuller'],
+      blurb: 'Earth, terrain, minerals, water, atmosphere. Tempered, not muted.',
+    },
+    ripe: {
+      key: 'ripe', label: 'Ripe', table: RIPE,
+      character: ['Vibrant', 'Expressive', 'Juicy', 'Abundant', 'Full'],
+      slider: ['Bright', 'Heightened'],
+      blurb: 'Fruit, flowers, crops, blooms. Heightened, not just saturated.',
+    },
+  };
+
+  /** Interpolated {Lmin, Lmax, Cmin, Cmax} of a territory at hue h. */
+  function bounds(key, h) {
+    const t = TERRITORIES[key].table;
+    const hh = ((h % 360) + 360) % 360;
+    const i = Math.floor(hh / 30) % 12, f = (hh % 30) / 30;
+    const a = t[i], b = t[(i + 1) % 12];
+    return { Lmin: lerp(a[1], b[1], f), Lmax: lerp(a[2], b[2], f), Cmin: lerp(a[3], b[3], f), Cmax: lerp(a[4], b[4], f) };
+  }
+
+  /** Signed normalised depth: >0 inside (0.5 = dead center), <0 outside. */
+  function depthIn(key, c) {
+    const b = bounds(key, c.h);
+    const dL = Math.min(c.L - b.Lmin, b.Lmax - c.L) / (b.Lmax - b.Lmin);
+    const dC = Math.min(c.C - b.Cmin, b.Cmax - c.C) / (b.Cmax - b.Cmin);
+    return Math.min(dL, dC);
+  }
+
+  /** Territory membership of an OKLCH color. */
+  function membership(c) {
+    const g = depthIn('grounded', c), r = depthIn('ripe', c);
+    const best = g >= r ? 'grounded' : 'ripe';
+    const depth = Math.max(g, r);
+    const status = depth >= CONFIG.coreDepth ? 'core' : depth >= 0 ? 'edge' : 'outside';
+    return { territory: depth >= 0 ? best : null, nearest: best, depth, status };
+  }
+
+  /** Color inside a territory at hue h, lightness L, intensity t (0..1 across the local chroma range). */
+  function colorAt(key, h, L, t) {
+    const b = bounds(key, h);
+    return fitToGamut({ L: clamp(L, b.Lmin, b.Lmax), C: lerp(b.Cmin, b.Cmax, t), h });
+  }
+
+  /** Position of a color's chroma within its territory's local chroma range (0..1). */
+  function intensityOf(key, c) {
+    const b = bounds(key, c.h);
+    return clamp((c.C - b.Cmin) / (b.Cmax - b.Cmin), 0, 1);
+  }
+
+  /** Nearest approved color in a territory (clamps into the local region, slightly inset). */
+  function snapInto(key, c) {
+    const b = bounds(key, c.h), inset = 0.04;
+    const L = clamp(c.L, lerp(b.Lmin, b.Lmax, inset), lerp(b.Lmax, b.Lmin, inset));
+    const C = clamp(c.C, lerp(b.Cmin, b.Cmax, inset), lerp(b.Cmax, b.Cmin, inset));
+    return fitToGamut({ L, C, h: c.h });
+  }
+
+  const evergreen = fromHex(CONFIG.evergreenHex);
+
+  SG.territories = { CONFIG, TERRITORIES, bounds, depthIn, membership, colorAt, intensityOf, snapInto, evergreen, hueDiff };
+  if (typeof module !== 'undefined') module.exports = SG.territories;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Spectrum rules: which color-chip combinations are allowed at each point of the
+   Grounded <-> Ripe balance, and how much visual area each chip gets.
+
+   Notation: G = Grounded chip, E = Evergreen (always present, never counted), R = Ripe chip.
+   At most 3 chips excluding Evergreen. Three chips are possible but not recommended.
+
+   The balance value p is the Ripe weight: 0 = Grounded end, 1 = Ripe end (slider runs G -> R).
+   Zones are listed from the Grounded end to the Ripe end. In each zone the default layout is
+   the first recommended one; "lead" says which territory is visually larger there. */
+(function (root) {
+  const SG = root.SG;
+
+  const MAX_CHIPS = 3;
+  const RECOMMENDED_MAX = 2;
+
+  const ZONES = [
+    { id: 'z1', min: 0.0, lead: 'grounded', name: 'Grounded end', combos: ['GGE', 'GE'] },
+    { id: 'z2', min: 0.2, lead: 'grounded', name: 'Grounded to center', combos: ['GGER', 'GER'] },
+    { id: 'z3', min: 0.4, lead: null, name: 'Center', combos: ['GER'] },
+    { id: 'z4', min: 0.6, lead: 'ripe', name: 'Center to Ripe', combos: ['GERR', 'GER'] },
+    { id: 'z5', min: 0.8, lead: 'ripe', name: 'Ripe end', combos: ['ERR', 'ER'] },
+  ];
+
+  function zoneIndex(p) {
+    let idx = 0;
+    for (let i = 0; i < ZONES.length; i++) if (p >= ZONES[i].min) idx = i;
+    return idx;
+  }
+
+  /** Index of the layout used in a zone until the user picks another: the first recommended one. */
+  function defaultPick(zone) {
+    const i = zone.combos.findIndex((c) => parse(c).recommended);
+    return i < 0 ? 0 : i;
+  }
+
+  function parse(code) {
+    const g = (code.match(/G/g) || []).length, r = (code.match(/R/g) || []).length;
+    return { g, r, chips: g + r, recommended: g + r <= RECOMMENDED_MAX, valid: g + r <= MAX_CHIPS && g + r >= 1 && code.includes('E') };
+  }
+
+  /** Chip ids present in a combo, e.g. 'GGER' -> ['g1','g2','r1']. */
+  function ids(code) {
+    const { g, r } = parse(code), out = [];
+    for (let i = 1; i <= g; i++) out.push('g' + i);
+    for (let i = 1; i <= r; i++) out.push('r' + i);
+    return out;
+  }
+
+  function label(code) {
+    const { g, r } = parse(code), part = (n, name) => (n === 0 ? null : n === 1 ? name : `${n} ${name}`);
+    return [part(g, 'Grounded'), 'Evergreen', part(r, 'Ripe')].filter(Boolean).join(' + ');
+  }
+
+  // Visual area of a territory as a function of its share of the balance. Evergreen is fixed at 1,
+  // so it reads as the anchor in the middle of the range and gives way at the extremes.
+  const areaOf = (w) => 0.25 + 0.95 * w;
+  const SPLIT = [1, 0.45]; // two chips in one territory: the lead keeps the full area, the companion is a smaller second voice
+
+  /** Effective Grounded / Ripe weights. The center zone is exactly balanced; elsewhere they follow the handle. */
+  function weights(p) {
+    const w = ZONES[zoneIndex(p)].lead === null ? 0.5 : p;
+    return { g: 1 - w, r: w };
+  }
+
+  function areas(p, code) {
+    const { g, r } = parse(code), w = weights(p), out = { e: 1 };
+    const spread = (prefix, n, share) => { const total = areaOf(share); if (n === 1) out[prefix + 1] = total; else if (n === 2) SPLIT.forEach((k, i) => (out[prefix + (i + 1)] = total * k)); };
+    spread('g', g, w.g);
+    spread('r', r, w.r);
+    return out;
+  }
+
+  SG.spectrum = { MAX_CHIPS, RECOMMENDED_MAX, ZONES, zoneIndex, defaultPick, parse, ids, label, weights, areas };
+  if (typeof module !== 'undefined') module.exports = SG.spectrum;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Back-end color logic. Evaluates a color (or a combination) along several dimensions at once:
+   territory membership, Evergreen relationship, cross-territory compatibility, visual hierarchy,
+   and contrast. Everything returns plain data; app.js translates it into brand language.
+   All thresholds live in PARAMS so they can be tuned against approved samples. */
+(function (root) {
+  const SG = root.SG;
+  const C = SG.color, T = SG.territories;
+  const { clamp, ramp, hueDiff } = C;
+
+  const PARAMS = {
+    evergreen: { // weights sum to 1
+      w: { distinct: 0.30, separation: 0.20, hue: 0.15, chroma: 0.10, dominance: 0.25 },
+      distinctRange: [0.08, 0.22],   // OKLab distance that reads as "its own color"
+      separationRange: [0.05, 0.25], // |dL| to Evergreen
+      maxChromaRatio: 4.2,           // beyond this the color overpowers Evergreen's intensity
+      works: 0.72, withCare: 0.50,
+    },
+    // hue relationship score by angular distance (0..180): analogous and intentional contrast
+    // read well; the middle bands are the awkward "almost related" zone.
+    hueHarmony: [[0, 0.9], [40, 0.9], [70, 0.6], [100, 0.7], [130, 0.85], [160, 1], [180, 1]],
+    pair: { w: { distinct: 0.35, spread: 0.20, chromaBalance: 0.20, hue: 0.25 }, distinctRange: [0.10, 0.28] },
+    trio: { relG: 0.3, relR: 0.3, pair: 0.4 },
+    contrast: { bodyWcag: 4.5, bodyLc: 60, largeWcag: 3, largeLc: 45 },
+  };
+
+  const interp = (tbl, x) => {
+    for (let i = 1; i < tbl.length; i++) if (x <= tbl[i][0]) { const [x0, y0] = tbl[i - 1], [x1, y1] = tbl[i]; return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0); }
+    return tbl[tbl.length - 1][1];
+  };
+  const hueHarmony = (dh) => interp(PARAMS.hueHarmony, dh);
+  const EV = T.evergreen;
+
+  /* ---------- Evergreen relationship ---------- */
+  function evergreenRelationship(c) {
+    const P = PARAMS.evergreen;
+    const dE = C.deltaE(c, EV), dL = c.L - EV.L, dh = hueDiff(c.h, EV.h), cRatio = c.C / EV.C;
+    const parts = {
+      distinct: ramp(dE, ...P.distinctRange),
+      separation: ramp(Math.abs(dL), ...P.separationRange),
+      hue: hueHarmony(dh),
+      chroma: cRatio <= P.maxChromaRatio ? 1 : clamp(1 - (cRatio - P.maxChromaRatio) / 2, 0.3, 1),
+      dominance: 1,
+    };
+    // a second green of similar lightness and presence fights Evergreen for the anchor role;
+    // chroma is judged relative to Evergreen's own vividness
+    const closeHue = 1 - ramp(dh, 20, 60), closeL = 1 - ramp(Math.abs(dL), 0.08, 0.25), closeC = ramp(c.C / EV.C, 0.25, 0.6);
+    parts.dominance = 1 - 0.85 * closeHue * closeL * closeC;
+    const score = Object.entries(P.w).reduce((s, [k, w]) => s + parts[k] * w, 0);
+    const verdict = score >= P.works ? 'works' : score >= P.withCare ? 'care' : 'competes';
+
+    const notes = [];
+    if (parts.dominance < 0.6) notes.push('Competes with Evergreen as a green.');
+    else if (parts.distinct < 0.5) notes.push('Sits close to Evergreen; it may not read as its own color.');
+    if (parts.separation < 0.4 && parts.dominance >= 0.6) notes.push('Similar depth to Evergreen; pair with care.');
+    if (dh >= 150 && parts.distinct >= 0.5) notes.push('An intentional contrast to Evergreen.');
+    else if (dh <= 40 && parts.distinct >= 0.5) notes.push('A related hue that keeps Evergreen in the family.');
+    if (!notes.length) notes.push('Evergreen stays the recognizable anchor.');
+    return { score, verdict, parts, metrics: { dE, dL, dh, cRatio }, notes };
+  }
+
+  /* ---------- Grounded <-> Ripe ---------- */
+  function pairCompat(g, r) {
+    const P = PARAMS.pair;
+    const dE = C.deltaE(g, r), spread = Math.abs(g.L - r.L), dh = hueDiff(g.h, r.h);
+    const parts = {
+      distinct: ramp(dE, ...P.distinctRange),
+      spread: ramp(spread, 0.04, 0.22),
+      chromaBalance: ramp(r.C / Math.max(g.C, 1e-3), 1.0, 2.2),
+      hue: hueHarmony(dh),
+    };
+    const score = Object.entries(P.w).reduce((s, [k, w]) => s + parts[k] * w, 0);
+    return { score, parts, metrics: { dE, spread, dh } };
+  }
+
+  function trio(g, r) {
+    const rg = evergreenRelationship(g), rr = evergreenRelationship(r), p = pairCompat(g, r), w = PARAMS.trio;
+    return { score: rg.score * w.relG + rr.score * w.relR + p.score * w.pair, grounded: rg, ripe: rr, pair: p };
+  }
+
+  /** Counterparts for a chosen color, drawn only from the other territory's approved core. */
+  function recommend(chosen, chosenTerritory, count = 6) {
+    const other = chosenTerritory === 'grounded' ? 'ripe' : 'grounded';
+    const cands = [];
+    for (let h = 0; h < 360; h += 10) {
+      const b = T.bounds(other, h);
+      for (const lf of [0.15, 0.4, 0.65, 0.9]) for (const t of [0.25, 0.6, 0.9]) {
+        const col = T.colorAt(other, h, b.Lmin + lf * (b.Lmax - b.Lmin), t);
+        const m = T.membership(col);
+        if (m.territory !== other || m.status !== 'core') continue;
+        const [g, r] = chosenTerritory === 'grounded' ? [chosen, col] : [col, chosen];
+        const rel = evergreenRelationship(col), pair = pairCompat(g, r);
+        if (rel.verdict === 'competes') continue;
+        cands.push({ color: col, rel, pair, score: 0.4 * rel.score + 0.6 * pair.score });
+      }
+    }
+    cands.sort((a, b) => b.score - a.score);
+    const picked = [], used = new Set();
+    for (const c of cands) {
+      const bucket = Math.floor(c.color.h / 36);
+      if (used.has(bucket)) continue;
+      used.add(bucket); picked.push(c);
+      if (picked.length === count) break;
+    }
+    return picked.map((c) => ({ ...c, reason: reasonFor(c, chosen, chosenTerritory) }));
+  }
+
+  function reasonFor(c, chosen, chosenTerritory) {
+    const out = [], name = chosenTerritory === 'grounded' ? 'Grounded' : 'Ripe';
+    const dh = c.pair.metrics.dh, dL = c.color.L - chosen.L;
+    if (dh >= 140) out.push(`Opposes your ${name} in hue`);
+    else if (dh <= 40) out.push(`Stays in your ${name}'s family`);
+    if (Math.abs(dL) >= 0.15) out.push(dL > 0 ? `Lighter than your ${name}` : `Deeper than your ${name}`);
+    if (c.rel.parts.hue >= 0.95 && out.length < 2) out.push('Strong contrast with Evergreen');
+    if (!out.length) out.push('Balanced against Evergreen');
+    return out.slice(0, 2).join(' · ');
+  }
+
+  /* ---------- Contrast ---------- */
+  function contrastLevel(fg, bg) {
+    const K = PARAMS.contrast, ratio = C.wcag(fg, bg), lc = C.apca(fg, bg);
+    const level = ratio >= K.bodyWcag && Math.abs(lc) >= K.bodyLc ? 'body' : ratio >= K.largeWcag && Math.abs(lc) >= K.largeLc ? 'large' : 'fail';
+    return { fg, bg, ratio, lc, level };
+  }
+  const RANK = { body: 2, large: 1, fail: 0 };
+
+  /** Foreground options for a background (white, ink, Evergreen, plus extras). */
+  function foregrounds(bgHex, extras = []) {
+    const { whiteHex, inkHex, evergreenHex } = T.CONFIG;
+    const opts = [['White', whiteHex], ['Ink', inkHex], ['Evergreen', evergreenHex], ...extras];
+    return opts.filter(([, hex]) => hex.toUpperCase() !== bgHex.toUpperCase())
+      .map(([name, hex]) => ({ name, ...contrastLevel(hex, bgHex) }));
+  }
+  function bestForeground(bgHex) {
+    const { whiteHex, inkHex } = T.CONFIG;
+    return [['White', whiteHex], ['Ink', inkHex]].map(([name, hex]) => ({ name, ...contrastLevel(hex, bgHex) }))
+      .sort((a, b) => RANK[b.level] - RANK[a.level] || Math.abs(b.lc) - Math.abs(a.lc))[0];
+  }
+
+  /** Brand-use guidance: translates the technical results into usage tags. */
+  function guidance(hex, c) {
+    const best = bestForeground(hex), { whiteHex, inkHex } = T.CONFIG;
+    const asText = [whiteHex, inkHex].map((bg) => contrastLevel(hex, bg));
+    const tags = [];
+    if (best.level === 'body') tags.push({ text: 'Best for backgrounds', tone: 'good' }, { text: best.name === 'Ink' ? 'Use with dark type' : 'Use with white type', tone: 'info' });
+    else if (best.level === 'large') tags.push({ text: 'Large type only on top', tone: 'warn' });
+    if (asText.some((x) => x.level === 'body')) tags.push({ text: 'Approved for text', tone: 'good' });
+    if (best.level !== 'body' && !asText.some((x) => x.level === 'body')) tags.push({ text: 'Best used as an accent', tone: 'info' });
+    if (best.level === 'large') tags.push({ text: 'Not recommended for small text', tone: 'warn' });
+    const rel = evergreenRelationship(c);
+    if (rel.verdict === 'works') tags.push({ text: 'Works with Evergreen', tone: 'good' });
+    else if (rel.verdict === 'care') tags.push({ text: 'Use carefully with Evergreen', tone: 'warn' });
+    else tags.push({ text: 'Competes with Evergreen', tone: 'bad' });
+    return { tags, best, rel };
+  }
+
+  /* ---------- Hierarchy ---------- */
+  const ROLE_NOTES = {
+    dominant: 'Large fields and backgrounds. Sets the energy.',
+    supporting: 'Secondary fields, panels, UI and type.',
+    accent: 'Small, deliberate moments: buttons, tags, highlights.',
+  };
+  /** items: [{id, key, hex, area}] including Evergreen. Roles follow visual area, so they shift with the balance. */
+  function hierarchy(items) {
+    const order = [...items].sort((a, b) => b.area - a.area || (a.key === 'evergreen' ? -1 : b.key === 'evergreen' ? 1 : 0));
+    // the dominant color has to be able to host type; otherwise it trades places with the next
+    if (order.length > 1 && bestForeground(order[0].hex).level === 'fail' && bestForeground(order[1].hex).level !== 'fail') [order[0], order[1]] = [order[1], order[0]];
+    return order.map((it, i) => {
+      const role = i === 0 ? 'dominant' : i === order.length - 1 && order.length >= 3 ? 'accent' : 'supporting';
+      return { ...it, role, note: ROLE_NOTES[role], anchor: it.key === 'evergreen' };
+    });
+  }
+
+  /* ---------- Multi-chip combinations ---------- */
+  const avg = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+
+  /** A companion inside the same territory: distinct from the chosen color, still clear of Evergreen. */
+  function companion(key, chosen) {
+    const t = T.intensityOf(key, chosen);
+    let best = null;
+    for (const dh of [35, -35, 60, -60, 90, -90, 130, -130, 180]) for (const lf of [0.2, 0.5, 0.8]) {
+      const h = (chosen.h + dh + 360) % 360, b = T.bounds(key, h);
+      const col = T.colorAt(key, h, b.Lmin + lf * (b.Lmax - b.Lmin), t), m = T.membership(col);
+      if (m.territory !== key || m.status !== 'core') continue;
+      const rel = evergreenRelationship(col);
+      if (rel.verdict === 'competes') continue;
+      const score = ramp(C.deltaE(col, chosen), 0.08, 0.2) * 0.5 + rel.score * 0.5 - 0.0005 * Math.abs(dh);
+      if (!best || score > best.score) best = { col, score };
+    }
+    return best ? best.col : T.snapInto(key, { ...chosen, h: (chosen.h + 40) % 360 });
+  }
+
+  /** Evaluate every chip against Evergreen, every Grounded x Ripe pair, and same-territory pairs. chips: [{key, c}] */
+  function evaluate(chips) {
+    const rels = chips.map((x) => evergreenRelationship(x.c));
+    const gs = chips.filter((x) => x.key === 'grounded'), rs = chips.filter((x) => x.key === 'ripe');
+    const cross = [];
+    gs.forEach((g) => rs.forEach((r) => cross.push(pairCompat(g.c, r.c))));
+    const same = [];
+    for (const grp of [gs, rs]) for (let i = 0; i < grp.length; i++) for (let j = i + 1; j < grp.length; j++) same.push(ramp(C.deltaE(grp[i].c, grp[j].c), 0.07, 0.16));
+    const parts = [[avg(rels.map((r) => r.score)), 0.35]];
+    if (cross.length) parts.push([avg(cross.map((x) => x.score)), 0.45]);
+    if (same.length) parts.push([avg(same), 0.2]);
+    const wsum = parts.reduce((s, [, w]) => s + w, 0);
+    const score = parts.reduce((s, [v, w]) => s + v * w, 0) / wsum;
+    const notes = [];
+    if (cross.length) notes.push(avg(cross.map((x) => x.parts.spread)) >= 0.5 ? 'Clear lightness difference between Grounded and Ripe.' : 'Grounded and Ripe sit at similar depth; let type and Evergreen create the contrast.');
+    if (cross.length && Math.min(...cross.map((x) => x.parts.distinct)) < 0.4) notes.push('A Grounded and a Ripe color sit close together.');
+    if (same.length && Math.min(...same) < 0.5) notes.push('Two colors in the same territory sit close together; separate them more.');
+    return { score, rels, cross, same, notes, chips: chips.length, recommended: chips.length <= SG.spectrum.RECOMMENDED_MAX };
+  }
+
+  /** Production values for one color. Re-derives OKLCH from the final HEX so the two always agree. */
+  function spec(c) {
+    const hex = C.toHex(c), final = C.fromHex(hex), [r, g, b] = C.parseHex(hex);
+    return { hex, rgb: [r, g, b], cmyk: C.cmyk(hex), oklch: final, oklchText: C.oklchString(final) };
+  }
+
+  SG.engine = { PARAMS, hueHarmony, evergreenRelationship, pairCompat, trio, recommend, companion, evaluate, contrastLevel, foregrounds, bestForeground, guidance, hierarchy, spec };
+  if (typeof module !== 'undefined') module.exports = SG.engine;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Front end. Translates the engine's technical results into brand language.
+   Journey, left to right on one screen: Choose an expression -> Explore color -> Build a combination -> Apply.
+   Numbers (OKLCH, scores, contrast) live in the Technical view drawer, not in the columns.
+
+   Model: Evergreen is always present. Up to 3 more chips (Grounded g1/g2, Ripe r1/r2).
+   The balance handlebar picks a zone; each zone allows specific combinations (js/spectrum.js). */
+(function () {
+  const { color: C, territories: T, engine: E, spectrum: SP } = SG;
+  const { TERRITORIES, CONFIG } = T;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  const FIELD = { w: 360, h: 200, Ltop: 0.97, Lbot: 0.2 };
+  const CHIP_IDS = ['g1', 'g2', 'r1', 'r2'];
+  const terrOf = (id) => (id[0] === 'g' ? 'grounded' : 'ripe');
+  const LEVEL = { body: ['Body text', 'good', '✓'], large: ['Large text only', 'warn', 'L'], fail: ['Avoid', 'bad', '✕'] };
+
+  const seed = { g1: T.colorAt('grounded', 45, 0.5, 0.5), r1: T.colorAt('ripe', 25, 0.66, 0.6) };
+  seed.g2 = E.companion('grounded', seed.g1);
+  seed.r2 = E.companion('ripe', seed.r1);
+
+  const S = {
+    p: 0.5, picks: {}, tech: false, active: 'r1',
+    chips: { ...seed },
+    t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
+    recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null,
+  };
+
+  /* ---------- derived state ---------- */
+  let cur = null; // snapshot for the current render
+  function snapshot() {
+    const zone = SP.zoneIndex(S.p), z = SP.ZONES[zone];
+    const pick = Number.isInteger(S.picks[z.id]) && S.picks[z.id] < z.combos.length ? S.picks[z.id] : SP.defaultPick(z), code = z.combos[pick];
+    const ids = SP.ids(code), area = SP.areas(S.p, code), q = SP.parse(code);
+    const nOf = (k) => ids.filter((i) => terrOf(i) === k).length;
+    const labelOf = (id) => {
+      if (id === 'e') return 'Evergreen';
+      const k = terrOf(id);
+      return TERRITORIES[k].label + (nOf(k) > 1 ? ' ' + id[1] : '');
+    };
+    const mk = (id) => {
+      if (id === 'e') { const spec = E.spec(T.evergreen); return { id, key: 'evergreen', hex: spec.hex, c: spec.oklch, spec, area: 1, label: 'Evergreen' }; }
+      const spec = E.spec(S.chips[id]);
+      return { id, key: terrOf(id), hex: spec.hex, c: spec.oklch, spec, area: area[id], label: labelOf(id) };
+    };
+    const order = ['r1', 'r2', 'e', 'g1', 'g2'].filter((id) => id === 'e' || ids.includes(id));
+    const items = order.map(mk), byId = Object.fromEntries(items.map((i) => [i.id, i]));
+    cur = { zone, z, pick, code, ids, q, items, byId, chipItems: items.filter((i) => i.id !== 'e'), hasG: q.g > 0, hasR: q.r > 0, labelOf };
+    if (!ids.includes(S.active)) S.active = ids.includes('r1') ? 'r1' : 'g1';
+  }
+  const activeKey = () => terrOf(S.active);
+  const textOn = (hex) => E.bestForeground(hex);
+  const inkOrWhite = (hex) => (textOn(hex).name === 'Ink' ? CONFIG.inkHex : '#fff');
+  const tagHtml = (t) => `<span class="tag tag-${t.tone}">${t.text}</span>`;
+
+  function depthPhrase(c, key) {
+    const m = T.membership(c);
+    if (m.territory !== key) return `Outside ${TERRITORIES[key].label}`;
+    return m.status === 'core' ? `Deep in ${TERRITORIES[key].label}` : `Edge of ${TERRITORIES[key].label}`;
+  }
+
+  /* ---------- URL state (shareable) ---------- */
+  function writeHash() {
+    const q = new URLSearchParams({ v: '2', p: S.p.toFixed(3), c: cur.code, pk: JSON.stringify(S.picks) });
+    CHIP_IDS.forEach((id) => q.set(id, E.spec(S.chips[id]).hex.slice(1)));
+    history.replaceState(null, '', '#' + q.toString());
+  }
+  function readHash() {
+    const q = new URLSearchParams(location.hash.slice(1));
+    const p = parseFloat(q.get('p')), current = q.get('v') === '2'; // v1 links used the opposite slider direction and other zones
+    if (current && p >= 0 && p <= 1) S.p = p;
+    try { if (!current) throw 0; const pk = JSON.parse(q.get('pk') || '{}'); if (pk && typeof pk === 'object') for (const z of SP.ZONES) if (Number.isInteger(pk[z.id]) && pk[z.id] >= 0 && pk[z.id] < z.combos.length) S.picks[z.id] = pk[z.id]; } catch (e) { /* ignore */ }
+    for (const id of CHIP_IDS) {
+      const c = q.get(id) && C.fromHex(q.get(id));
+      if (!c) continue;
+      const k = terrOf(id);
+      S.chips[id] = T.membership(c).territory === k ? c : T.snapInto(k, c); // never load a color outside its territory
+      S.t[id] = T.intensityOf(k, S.chips[id]);
+    }
+  }
+
+  /* ---------- 1. Expression: balance handlebar + stack ---------- */
+  function renderComposer() {
+    $('#balance').value = Math.round(S.p * 1000);
+    // zone legend, Grounded end (left) to Ripe end (right)
+    $('#bal-zones').innerHTML = SP.ZONES.map((z) => `<span class="zone${z.id === cur.z.id ? ' on' : ''}">${z.combos.join('<br>')}</span>`).join('');
+
+    // layout choices inside the current zone
+    $('#layouts').innerHTML = cur.z.combos.length < 2 ? '' : cur.z.combos.map((code, i) => {
+      const q = SP.parse(code);
+      const dots = [...SP.ids(code).filter((x) => x[0] === 'g'), 'e', ...SP.ids(code).filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
+      return `<button class="layout${i === cur.pick ? ' on' : ''}" data-action="layout" data-v="${i}" role="radio" aria-checked="${i === cur.pick}">
+        <span class="dots">${dots}</span><span class="lab">${SP.label(code)}${cur.z.lead ? `<small class="lead">${cur.z.lead === 'grounded' ? 'Grounded-led' : 'Ripe-led'}</small>` : ''}</span>${q.recommended ? '' : '<span class="tag tag-warn">Not recommended</span>'}</button>`;
+    }).join('');
+
+    const n = cur.q.chips;
+    $('#count-note').innerHTML = n >= 3
+      ? `<span class="tag tag-warn">3 colors: possible, not recommended</span><span>Two is the recommended maximum.</span>`
+      : `<span class="tag tag-good">${n} ${n === 1 ? 'color' : 'colors'} + Evergreen</span>`;
+    renderStack();
+  }
+
+  function renderStack() {
+    const stack = $('#stack');
+    let first = true;
+    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
+      const el = $(`.slot[data-id=${id}]`, stack), it = cur.byId[id];
+      if (!it) { el.classList.remove('on', 'first', 'sel'); el.style.flexGrow = 0; el.tabIndex = -1; return; }
+      const isFirst = first; first = false;
+      el.classList.add('on'); el.classList.toggle('first', isFirst);
+      el.classList.toggle('sel', S.active === id);
+      el.classList.toggle('compact', it.area < 0.5);
+      el.style.flexGrow = it.area; el.style.background = it.hex; el.style.color = inkOrWhite(it.hex); el.tabIndex = id === 'e' ? -1 : 0;
+      el.setAttribute('aria-label', `${it.label}, ${it.hex}`);
+      el.innerHTML = `<span class="b-label">${it.label}</span><span class="b-hex">${it.hex}</span>`;
+    });
+    $('[data-empty=top]', stack).classList.toggle('on', !cur.hasR);
+    $('[data-empty=bottom]', stack).classList.toggle('on', !cur.hasG);
+
+    // header spectrum follows the selection
+    const g = cur.byId.g1 ? cur.byId.g1.hex : CONFIG.evergreenHex, r = cur.byId.r1 ? cur.byId.r1.hex : CONFIG.evergreenHex;
+    $('#spectrum-bar').style.background = `linear-gradient(90deg, ${g}, ${CONFIG.evergreenHex} 50%, ${r})`;
+  }
+
+  /* ---------- 2. Explore ---------- */
+  function renderTabs() {
+    const tabs = $('#tabs');
+    tabs.hidden = cur.chipItems.length < 2;
+    tabs.innerHTML = cur.chipItems.map((it) => `<button role="tab" aria-selected="${S.active === it.id}" class="${S.active === it.id ? 'on' : ''}" data-action="chip" data-v="${it.id}">
+      <i style="background:${it.hex}"></i>${it.label}</button>`).join('');
+  }
+
+  function renderExploreStatic() {
+    const key = activeKey(), terr = TERRITORIES[key];
+    $('#explore-sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
+    $('#intensity-label').textContent = `How ${key === 'grounded' ? 'full' : 'heightened'}?`;
+    $('#intensity-lo').textContent = terr.slider[0];
+    $('#intensity-hi').textContent = terr.slider[1];
+    $('#intensity').value = Math.round(S.t[S.active] * 100);
+  }
+
+  function buildField(key, t) {
+    const { w, h, Ltop, Lbot } = FIELD;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(w, h);
+    for (let x = 0; x < w; x++) {
+      const hue = (x / w) * 360, b = T.bounds(key, hue);
+      for (let y = 0; y < h; y++) {
+        const L = Ltop - (y / (h - 1)) * (Ltop - Lbot), i = (y * w + x) * 4;
+        const dL = Math.min(L - b.Lmin, b.Lmax - L) / (b.Lmax - b.Lmin);
+        let ok = dL >= 0;
+        if (ok) {
+          const fit = C.fitToGamut({ L, C: b.Cmin + t * (b.Cmax - b.Cmin), h: hue });
+          if (fit.C < b.Cmin * 0.92) ok = false; // not representable in sRGB at this hue/lightness
+          else {
+            const [r, g, bl] = C.oklchToRgb8(fit);
+            img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = bl; img.data[i + 3] = Math.round(255 * C.clamp(dL / 0.06, 0.35, 1));
+          }
+        }
+        if (!ok) { img.data[i] = 0; img.data[i + 1] = 0; img.data[i + 2] = 0; img.data[i + 3] = 14; }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return cv;
+  }
+
+  function drawField() {
+    const key = activeKey(), t = S.t[S.active], cacheKey = key + ':' + t.toFixed(2);
+    if (S.fieldKey !== cacheKey) { S.fieldBitmap = buildField(key, t); S.fieldKey = cacheKey; }
+    const cv = $('#field'), ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(S.fieldBitmap, 0, 0);
+    const c = S.chips[S.active], { Ltop, Lbot } = FIELD, m = $('#marker');
+    m.style.left = (c.h / 360) * 100 + '%';
+    m.style.top = ((Ltop - c.L) / (Ltop - Lbot)) * 100 + '%';
+    m.style.background = C.toHex(c);
+    const ev = $('#ev-marker');
+    ev.style.left = (T.evergreen.h / 360) * 100 + '%';
+    ev.style.top = ((Ltop - T.evergreen.L) / (Ltop - Lbot)) * 100 + '%';
+    ev.style.background = CONFIG.evergreenHex;
+  }
+
+  function renderContext() {
+    const key = activeKey(), it = cur.byId[S.active], g = E.guidance(it.hex, it.c);
+    $('#context').innerHTML = `
+      <div class="stage">
+        <div class="stage-ev" style="background:${CONFIG.evergreenHex};color:${inkOrWhite(CONFIG.evergreenHex)}"><span>Evergreen</span></div>
+        <div class="stage-sel" style="background:${it.hex};color:${g.best.level === 'fail' ? '#fff' : inkOrWhite(it.hex)}">
+          <span class="stage-aa">Aa</span><span>${it.label}</span>
+        </div>
+      </div>
+      <div class="hexline"><b>${it.hex}</b><button class="mini" data-action="copy" data-v="${it.hex}" aria-label="Copy HEX">Copy</button><span class="depth">${depthPhrase(it.c, key)}</span></div>
+      <div class="tags ctx-tags">${tagHtml(g.tags[g.tags.length - 1])}</div>
+      <p class="note">${g.rel.notes.join(' ')}</p>`;
+  }
+
+  function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); }
+
+  function pickFromPointer(ev) {
+    const key = activeKey(), r = $('#field').getBoundingClientRect(), { Ltop, Lbot } = FIELD;
+    const h = C.clamp((ev.clientX - r.left) / r.width, 0, 0.9999) * 360;
+    const L = Ltop - C.clamp((ev.clientY - r.top) / r.height, 0, 1) * (Ltop - Lbot);
+    S.chips[S.active] = T.colorAt(key, h, L, S.t[S.active]); // clamps L into the territory at this hue
+    schedule();
+  }
+
+  function testHex() {
+    const msg = $('#test-msg'), c = C.fromHex($('#hex-test').value), key = activeKey(), id = S.active;
+    if (!c) { msg.innerHTML = 'Enter a valid HEX, like <b>#E4572E</b>.'; return; }
+    if (c.C < 0.02) c.h = S.chips[id].h; // a neutral has no hue; keep the current one
+    const m = T.membership(c), mine = TERRITORIES[key].label;
+    if (m.territory === key) { setChip(id, c); msg.innerHTML = `Inside ${mine}. Applied.`; fullRender(); return; }
+    const other = m.territory && cur.ids.some((x) => terrOf(x) === m.territory) ? m.territory : null;
+    const where = m.territory ? `That color belongs to ${TERRITORIES[m.territory].label}.` : 'That color sits outside the Sweetgreen territories.';
+    S.pendingSnap = T.snapInto(key, c);
+    msg.innerHTML = `${where} Nearest ${mine}: <span class="chip"><i style="background:${C.toHex(S.pendingSnap)}"></i>${C.toHex(S.pendingSnap)}</span>
+      <button class="mini" data-action="snap">Use it</button>${other ? `<button class="mini" data-action="goto" data-v="${other[0]}1" data-hex="${C.toHex(c)}">Use as ${TERRITORIES[other].label}</button>` : ''}`;
+  }
+
+  /* ---------- 3. Build ---------- */
+  const overallLabel = (s) => (s >= 0.72 ? ['Strong match', 'good'] : s >= 0.55 ? ['Good match', 'info'] : ['Use with care', 'warn']);
+
+  function posterHtml(order) {
+    const n = order.length;
+    const blocks = order.map((o) => {
+      const tag = `<small>${o.label}${o.anchor ? ' · Anchor' : ''}</small>`;
+      const inner = o.role === 'dominant' ? `${tag}<h4>In season, right now.</h4><p>Fresh ingredients, thoughtfully grown.</p>`
+        : o.role === 'accent' ? `${tag}<span class="pill">Order now</span>` : `${tag}<p>Secondary information.</p>`;
+      return `<div class="b b-${o.role}" style="background:${o.hex};color:${inkOrWhite(o.hex)}">${inner}</div>`;
+    });
+    return `<div class="poster n${n}" style="${n >= 3 ? `grid-template-rows:repeat(${n - 1},1fr)` : ''}" aria-label="Composition preview, illustrative proportions">${blocks.join('')}</div>`;
+  }
+
+  function renderBuild() {
+    const order = E.hierarchy(cur.items);
+    let html = `<div class="roles">${order.map((o) => `
+      <div class="role" title="${o.note}"><span class="role-sw" style="background:${o.hex}"></span>
+        <div><b>${o.role[0].toUpperCase() + o.role.slice(1)}</b> <span class="role-name">${o.label}${o.anchor ? ' · anchor' : ''}</span><small>${o.note}</small></div></div>`).join('')}</div>`;
+
+    const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
+    html += `<div class="overall"><span class="tag tag-${tone}">${lab}</span>${cur.q.recommended ? '' : '<span class="tag tag-warn">3 colors</span>'}<span>${ev.notes.slice(0, 2).join(' ')}</span></div>`;
+
+    if (cur.hasG && cur.hasR) {
+      const from = activeKey(), to = from === 'grounded' ? 'ripe' : 'grounded', target = to[0] + '1';
+      S.recs = E.recommend(S.chips[S.active], from, 6);
+      html += `<h3 class="sub">${TERRITORIES[to].label} counterparts<small>for ${cur.byId[S.active].label}, replaces ${cur.labelOf(target)}</small></h3>
+        <div class="recs">${S.recs.map((r, i) => {
+          const sp = E.spec(r.color), on = cur.byId[target] && cur.byId[target].hex === sp.hex;
+          return `<button class="rec${on ? ' on' : ''}" data-action="rec" data-v="${i}" data-target="${target}" title="${r.reason}">
+            <span class="rec-sw" style="background:${sp.hex}"><i style="background:${CONFIG.evergreenHex}"></i></span>
+            <b>${sp.hex}</b><span class="rec-why">${r.reason}</span></button>`; }).join('')}</div>`;
+    } else {
+      const other = cur.hasG ? 'Ripe' : 'Grounded';
+      html += `<div class="invite"><span>Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</span>
+        <button class="btn" data-action="mix">Add ${other}</button></div>`;
+    }
+    html += posterHtml(order);
+    $('#build-body').innerHTML = html;
+  }
+
+  /* ---------- 4. Apply ---------- */
+  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
+
+  function crow(o) {
+    const g = E.guidance(o.hex, o.c), s = o.spec;
+    if (o.key === 'evergreen') g.tags = g.tags.filter((t) => !/Evergreen|accent/.test(t.text)).concat({ text: 'The constant', tone: 'good' });
+    return `<div class="crow"><span class="crow-sw" style="background:${o.hex}"></span><div style="min-width:0">
+      <div class="crow-title"><b>${o.label}</b><span>${o.role[0].toUpperCase() + o.role.slice(1)}${o.anchor ? ' · Anchor' : ''}</span></div>
+      <div class="crow-vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
+      <div class="tags crow-tags">${g.tags.slice(0, 1).map(tagHtml).join('')}</div></div></div>`;
+  }
+
+  function matrixHtml(order) {
+    const { whiteHex, inkHex, evergreenHex } = CONFIG;
+    const cols = [['White', whiteHex], ['Ink', inkHex], ['Evergreen', evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
+    const head = cols.map(([n, hex]) => `<div class="mx-h" title="${n} type"><i style="background:${hex}"></i></div>`).join('');
+    const rows = order.map((o) => {
+      const cells = cols.map(([n, hex]) => {
+        if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="mx same" title="Same color"></div>`;
+        const r = E.contrastLevel(hex, o.hex), [lab, , mark] = LEVEL[r.level];
+        return `<div class="mx lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${n} on ${o.label}: ${lab}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
+      }).join('');
+      return `<div class="mx-r"><i style="background:${o.hex}"></i><span>${o.label}</span></div>${cells}`;
+    }).join('');
+    return `<div class="matrix" style="grid-template-columns:86px repeat(${cols.length},minmax(0,1fr))"><div></div>${head}${rows}</div>
+      <div class="legend"><span><b>✓</b> Body text</span><span><b>L</b> Large text only</span><span><b>✕</b> Avoid</span><span>Columns: type color</span></div>`;
+  }
+
+  function renderApply() {
+    const order = E.hierarchy(cur.items);
+    $('#apply-body').innerHTML = `
+      <div class="crows${order.length >= 4 ? ' dense' : ''}">${order.map(crow).join('')}</div>
+      <h3 class="sub">Type on color</h3>
+      ${matrixHtml(order)}
+      <div class="exports">
+        <button class="btn" data-action="copy-css">CSS variables</button>
+        <button class="btn" data-action="copy-json">JSON</button>
+        <button class="btn btn-primary" data-action="copy-link">Copy link</button>
+      </div>`;
+  }
+
+  /* ---------- Technical view (drawer) ---------- */
+  const bar = (label, v) => `<div class="bar"><span>${label}</span><i style="--w:${Math.round(C.clamp(v, 0, 1) * 100)}%"></i><em>${v.toFixed(2)}</em></div>`;
+
+  function renderTech() {
+    const dr = $('#drawer');
+    dr.hidden = !S.tech;
+    if (!S.tech) return;
+    const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c })));
+    const cards = cur.chipItems.map((it, i) => {
+      const m = T.membership(it.c), r = ev.rels[i];
+      return `<div class="tcard"><div class="tcard-h"><i style="background:${it.hex}"></i>${it.label} <span class="mono">${it.hex}</span></div>
+        <div class="mono">${it.spec.oklchText} · CMYK≈ ${it.spec.cmyk.join(' ')} · RGB ${it.spec.rgb.join(', ')}<br>${depthPhrase(it.c, it.key)} · depth ${m.depth.toFixed(2)} (${m.status})</div>
+        <div style="margin-top:6px">${bar('Evergreen fit', r.score)}${Object.entries(r.parts).map(([k, v]) => bar(k, v)).join('')}</div>
+        <div class="mono">ΔE(OK) ${r.metrics.dE.toFixed(3)} · ΔL ${r.metrics.dL.toFixed(2)} · hue Δ ${r.metrics.dh.toFixed(0)}° · C ratio ${r.metrics.cRatio.toFixed(2)}</div>
+        <div class="tags" style="margin-top:6px">${E.guidance(it.hex, it.c).tags.map(tagHtml).join('')}</div></div>`;
+    }).join('');
+    const gs = cur.chipItems.filter((i) => i.key === 'grounded'), rs = cur.chipItems.filter((i) => i.key === 'ripe');
+    const pairs = [];
+    gs.forEach((g) => rs.forEach((r, k) => pairs.push(`<div class="tcard"><div class="tcard-h">${g.label} ↔ ${r.label}</div>${Object.entries(E.pairCompat(g.c, r.c).parts).map(([n, v]) => bar(n, v)).join('')}</div>`)));
+    const fgList = [['White', CONFIG.whiteHex], ['Ink', CONFIG.inkHex], ['Evergreen', CONFIG.evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
+    const rowsT = cur.items.map((o) => `<tr><td>${o.label}</td>${fgList.map(([n, hex]) => {
+      if (hex.toUpperCase() === o.hex.toUpperCase()) return '<td>–</td>';
+      const r = E.contrastLevel(hex, o.hex); return `<td title="${n} on ${o.label}">${r.ratio.toFixed(1)} / ${Math.abs(r.lc).toFixed(0)}</td>`; }).join('')}</tr>`).join('');
+    $('#drawer-body').innerHTML = `
+      <p>Balance ${S.p.toFixed(2)} (0 = Grounded end, 1 = Ripe end) · zone ${cur.z.id} · layout ${cur.code} · ${cur.q.chips} chips${cur.q.recommended ? '' : ' (not recommended)'} · overall ${ev.score.toFixed(2)}</p>
+      <section><h4>Each color against Evergreen</h4>${cards}</section>
+      ${pairs.length ? `<section><h4>Grounded ↔ Ripe</h4>${pairs.join('')}</section>` : ''}
+      <section><h4>Contrast: WCAG ratio / APCA Lc</h4>
+        <table class="ttable"><tr><th>bg \\ type</th>${fgList.map(([n]) => `<th>${n.slice(0, 5)}</th>`).join('')}</tr>${rowsT}</table>
+        <p style="margin-top:4px">Body text needs ≥ ${E.PARAMS.contrast.bodyWcag}:1 and Lc ≥ ${E.PARAMS.contrast.bodyLc}; large text ≥ ${E.PARAMS.contrast.largeWcag}:1 and Lc ≥ ${E.PARAMS.contrast.largeLc}.</p></section>
+      <section><h4>Territory slice at hue ${S.chips[S.active].h.toFixed(0)}°</h4><canvas id="slice" width="360" height="300"></canvas>
+        <p>Territories are irregular, hue-dependent regions (shaded boxes), not one universal L/C range. Shaded area is the sRGB gamut. Evergreen is plotted at its own chroma and lightness.</p></section>
+      <p>Territory boundaries are provisional until calibrated against Sweetgreen's approved samples. CMYK values are indicative only; confirm with press proofs.</p>`;
+    drawSlice();
+  }
+
+  function drawSlice() {
+    const cv = $('#slice');
+    if (!cv) return;
+    const hue = S.chips[S.active].h, ctx = cv.getContext('2d'), W = cv.width, H = cv.height, Cmax = 0.33, img = ctx.createImageData(W, H);
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+      const c = (x / W) * Cmax, L = 1 - y / H, i = (y * W + x) * 4;
+      const inside = C.oklchToLinear({ L, C: c, h: hue }).every((v) => v >= -1e-4 && v <= 1 + 1e-4);
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = inside ? 236 : 255; img.data[i + 3] = 255;
+      if (inside) { const [r, g, b] = C.oklchToRgb8({ L, C: c, h: hue }); img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 70; }
+    }
+    ctx.putImageData(img, 0, 0);
+    const X = (c) => (c / Cmax) * W, Y = (L) => (1 - L) * H;
+    for (const [k, col] of [['grounded', '#7a7a7a'], ['ripe', '#111111']]) {
+      const b = T.bounds(k, hue);
+      ctx.fillStyle = col + '33'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      ctx.fillRect(X(b.Cmin), Y(b.Lmax), X(b.Cmax) - X(b.Cmin), Y(b.Lmin) - Y(b.Lmax));
+      ctx.strokeRect(X(b.Cmin), Y(b.Lmax), X(b.Cmax) - X(b.Cmin), Y(b.Lmin) - Y(b.Lmax));
+      ctx.fillStyle = col; ctx.font = '11px system-ui'; ctx.fillText(TERRITORIES[k].label, X(b.Cmin) + 4, Y(b.Lmax) + 13);
+    }
+    for (const e of cur.items) { ctx.beginPath(); ctx.arc(X(e.c.C), Y(e.c.L), 6, 0, 7); ctx.fillStyle = e.hex; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
+    ctx.fillStyle = '#444'; ctx.font = '11px system-ui';
+    ctx.fillText(`x: chroma 0–${Cmax}  ·  y: lightness`, 6, H - 6);
+  }
+
+  /* ---------- exports ---------- */
+  function exportData() {
+    const order = E.hierarchy(cur.items), extras = cur.chipItems.map((e) => [e.label, e.hex]);
+    return {
+      balance: +S.p.toFixed(3), layout: cur.code, chips: cur.q.chips, recommended: cur.q.recommended,
+      colors: order.map((o) => {
+        const g = E.guidance(o.hex, o.c);
+        return { name: o.label, territory: o.key, role: o.role, anchor: o.anchor, hex: o.hex, rgb: o.spec.rgb, cmykApprox: o.spec.cmyk, oklch: o.spec.oklchText,
+          guidance: g.tags.map((t) => t.text),
+          approvedForeground: E.foregrounds(o.hex, extras).filter((f) => f.level !== 'fail').map((f) => ({ fg: f.name, hex: f.fg, use: LEVEL[f.level][0] })) };
+      }),
+    };
+  }
+  function exportCss() {
+    const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const d = exportData();
+    return ':root {\n' + d.colors.map((c) => `  --sg-${slug(c.name)}: ${c.hex}; /* ${c.territory}, ${c.role}${c.anchor ? ', anchor' : ''}; ${c.oklch} */`).join('\n') + `\n  --sg-ink: ${CONFIG.inkHex};\n}\n`;
+  }
+
+  function copy(text, label = 'Copied') {
+    const done = () => toast(label);
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed'); } ta.remove();
+  }
+  let toastTimer;
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600); }
+
+  /* ---------- render orchestration ---------- */
+  let raf = 0;
+  function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; fullRender(); }); }
+  function fullRender() {
+    snapshot();
+    renderComposer(); renderTabs(); renderExploreStatic(); drawField(); renderContext(); renderBuild(); renderApply(); renderTech(); writeHash();
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-action]');
+    if (!b) return;
+    const a = b.dataset.action, v = b.dataset.v || b.dataset.id;
+    if (a === 'layout') { S.picks[cur.z.id] = +v; fullRender(); }
+    else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } S.active = v; fullRender(); }
+    else if (a === 'mix') { S.p = 0.5; fullRender(); }
+    else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
+    else if (a === 'copy') copy(v);
+    else if (a === 'copy-css') copy(exportCss(), 'CSS variables copied');
+    else if (a === 'copy-json') copy(JSON.stringify(exportData(), null, 2), 'JSON copied');
+    else if (a === 'copy-link') { writeHash(); copy(location.href, 'Link copied'); }
+    else if (a === 'test-hex') testHex();
+    else if (a === 'snap') { setChip(S.active, S.pendingSnap); $('#test-msg').textContent = 'Applied the nearest approved color.'; fullRender(); }
+    else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); $('#test-msg').textContent = ''; fullRender(); }
+    else if (a === 'close-tech') { S.tech = false; $('#tech-toggle').checked = false; fullRender(); }
+  });
+
+  $('#balance').addEventListener('input', (e) => { S.p = e.target.value / 1000; schedule(); });
+
+  const field = $('#field');
+  let dragging = false;
+  field.addEventListener('pointerdown', (e) => { dragging = true; field.setPointerCapture(e.pointerId); pickFromPointer(e); });
+  field.addEventListener('pointermove', (e) => { if (dragging) pickFromPointer(e); });
+  field.addEventListener('pointerup', () => { dragging = false; });
+  field.addEventListener('keydown', (e) => {
+    const key = activeKey(), c = S.chips[S.active], step = e.shiftKey ? 10 : 2;
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, 0.01], ArrowDown: [0, -0.01] };
+    if (!moves[e.key]) return;
+    e.preventDefault();
+    S.chips[S.active] = T.colorAt(key, (c.h + moves[e.key][0] + 360) % 360, c.L + moves[e.key][1], S.t[S.active]);
+    schedule();
+  });
+  $('#intensity').addEventListener('input', (e) => {
+    const key = activeKey(), c = S.chips[S.active];
+    S.t[S.active] = e.target.value / 100; S.chips[S.active] = T.colorAt(key, c.h, c.L, S.t[S.active]); schedule();
+  });
+  $('#hex-test').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
+  $('#tech-toggle').addEventListener('change', (e) => { S.tech = e.target.checked; fullRender(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tech) { S.tech = false; $('#tech-toggle').checked = false; fullRender(); } });
+
+  /* ---------- init ---------- */
+  readHash();
+  fullRender();
+  window.SGApp = { state: S, snapshot: () => cur, exportData };
+})();
+
+</script>
+</body>
+</html>
