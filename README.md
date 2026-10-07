@@ -30,17 +30,17 @@ Tests: `node tests/engine.test.js`
 
 ## The balance handlebar
 Evergreen is always present and never counted. At most **3 other chips**; 3 is possible but flagged *not recommended*.
-The handlebar (R left, G right) moves through five zones, Grounded end to Ripe end. Letters: G Grounded, E Evergreen, R Ripe; the first layout in each zone is the default.
+The handlebar runs **G (left) to R (right)** through five zones. Letters: G Grounded, E Evergreen, R Ripe. The default layout in each zone is the first recommended one.
 
-| Zone | Layouts |
-|---|---|
-| Grounded end | `GGE` |
-| | `GE`, `GER` |
-| Middle | `GER`, `GGER` (3 chips) |
-| | `ERR`, `GERR` (3 chips) |
-| Ripe end | `ER` |
+| Zone | Layouts | Visual weight |
+|---|---|---|
+| Grounded end | `GGE`, `GE` | Grounded only |
+| Grounded to center | `GGER` (3 chips), `GER` | Grounded larger than Ripe |
+| Center | `GER` | Grounded and Ripe equal |
+| Center to Ripe | `GERR` (3 chips), `GER` | Ripe larger than Grounded |
+| Ripe end | `ERR`, `ER` | Ripe only |
 
-Edit `ZONES` in `js/spectrum.js` to change this. Roles (Dominant / Supporting / Accent) follow each chip's visual area, which follows the handle, so Evergreen leads in the middle and gives way at the extremes.
+Edit `ZONES` in `js/spectrum.js` to change this. Roles (Dominant / Supporting / Accent) follow each chip's visual area, which follows the handle, so Evergreen leads in the middle and gives way toward the ends. Shared links carry `v=2`; older links keep their colors but reset the balance.
 
 ## Needs calibration before launch
 1. **Territory tables are provisional.** They are seeded from general color knowledge and sRGB gamut limits, not from approved Sweetgreen samples. Follow *Visual → Sample → Measure → Rule*: classify a large set as approved / borderline / outside, measure it in OKLCH, and replace the tables in `territories.js`. The `core`/`edge` margin is `CONFIG.coreDepth`.

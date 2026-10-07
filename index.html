@@ -42,18 +42,17 @@
   </section>
 
   <section id="expression" class="panel">
-    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>Slide between Ripe and Grounded. Evergreen stays in the middle, always.</p></div></header>
+    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>Slide between Grounded and Ripe. Evergreen stays in the middle, always.</p></div></header>
     <div class="composer">
       <div class="comp-left">
         <input id="season" class="season" type="text" maxlength="32" placeholder="SEASONAL" autocomplete="off" aria-label="Season or campaign name (optional)">
         <div class="bal">
           <div class="bal-title">Balance</div>
-          <div class="bal-row"><span class="bal-end">R</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Ripe and Grounded"><span class="bal-end">G</span></div>
+          <div class="bal-row"><span class="bal-end">G</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Grounded and Ripe"><span class="bal-end">R</span></div>
           <div class="bal-zones" id="bal-zones" aria-hidden="true"></div>
         </div>
         <div class="layouts" id="layouts" role="radiogroup" aria-label="Color chip layout"></div>
         <div id="count-note" class="count-note"></div>
-        <div class="names" id="names"></div>
       </div>
       <div class="stack-col">
         <div class="stack" id="stack" role="group" aria-label="Color balance preview">

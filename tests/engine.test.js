@@ -57,13 +57,14 @@ ok('recommend returns approved-territory, non-competing, hue-diverse counterpart
 ok('hierarchy follows area; Evergreen always present; dominant can host type', () => {
   const mk = (p, code) => { const A = SP.areas(p, code), hex = { e: '#00A810', g1: '#8A6B4F', g2: '#5C6B7A', r1: '#FF5A36', r2: '#F2A93B' };
     return SP.ids(code).concat('e').map((id) => ({ id, key: id === 'e' ? 'evergreen' : id[0] === 'g' ? 'grounded' : 'ripe', hex: hex[id], area: A[id] })); };
-  for (const [p, code] of [[0.9, 'GGE'], [0.7, 'GE'], [0.5, 'GER'], [0.5, 'GGER'], [0.3, 'GERR'], [0.3, 'ERR'], [0.1, 'ER']]) {
+  for (const [p, code] of [[0.1, 'GGE'], [0.1, 'GE'], [0.3, 'GGER'], [0.3, 'GER'], [0.5, 'GER'], [0.7, 'GER'], [0.7, 'GERR'], [0.9, 'ERR'], [0.9, 'ER']]) {
     const h = E.hierarchy(mk(p, code));
     assert(h.some((x) => x.key === 'evergreen')); assert.strictEqual(h[0].role, 'dominant');
     assert(E.bestForeground(h[0].hex).level !== 'fail', code);
   }
   assert.strictEqual(E.hierarchy(mk(0.5, 'GER'))[0].key, 'evergreen', 'balanced: Evergreen leads');
-  assert.strictEqual(E.hierarchy(mk(0.9, 'GGE'))[0].key, 'grounded', 'Grounded end: Grounded leads');
+  assert.strictEqual(E.hierarchy(mk(0.05, 'GGE'))[0].key, 'grounded', 'Grounded end: Grounded leads');
+  assert.strictEqual(E.hierarchy(mk(0.95, 'ER'))[0].key, 'ripe', 'Ripe end: Ripe leads');
 });
 ok('spectrum: every combo has at most 3 chips (Evergreen excluded) and 3-chip combos are flagged', () => {
   const all = SP.ZONES.flatMap((z) => z.combos);
@@ -71,14 +72,27 @@ ok('spectrum: every combo has at most 3 chips (Evergreen excluded) and 3-chip co
   for (const c of all) { const q = SP.parse(c); assert(q.valid && q.chips <= SP.MAX_CHIPS, c); assert.strictEqual(q.recommended, q.chips <= 2, c); }
   assert.strictEqual(SP.parse('GGER').recommended, false); assert.strictEqual(SP.parse('GERR').recommended, false);
 });
-ok('spectrum: zones run Grounded end -> Ripe end and cover 0..1', () => {
-  assert.strictEqual(SP.zoneIndex(1), 0); assert.strictEqual(SP.zoneIndex(0), SP.ZONES.length - 1);
+ok('spectrum: zones are exactly the agreed layouts, Grounded end -> Ripe end', () => {
+  assert.deepStrictEqual(SP.ZONES.map((z) => z.combos), [['GGE', 'GE'], ['GGER', 'GER'], ['GER'], ['GERR', 'GER'], ['ERR', 'ER']]);
+  assert.deepStrictEqual(SP.ZONES.map((z) => z.lead), ['grounded', 'grounded', null, 'ripe', 'ripe']);
+  assert.strictEqual(SP.zoneIndex(0), 0); assert.strictEqual(SP.zoneIndex(1), 4);
   for (let p = 0; p <= 1; p += 0.01) assert(SP.zoneIndex(p) >= 0);
   assert(SP.ZONES[0].combos.every((c) => !c.includes('R')), 'Grounded end has no Ripe');
-  assert(SP.ZONES.at(-1).combos.every((c) => !c.includes('G')), 'Ripe end has no Grounded');
+  assert(SP.ZONES[4].combos.every((c) => !c.includes('G')), 'Ripe end has no Grounded');
 });
-ok('spectrum: area shifts monotonically with the balance', () => {
-  assert(SP.areas(0.7, 'GER').g1 > SP.areas(0.3, 'GER').g1); assert(SP.areas(0.7, 'GER').r1 < SP.areas(0.3, 'GER').r1);
+ok('spectrum: default layout is the first recommended one (never a 3-chip layout)', () => {
+  assert.deepStrictEqual(SP.ZONES.map((z) => z.combos[SP.defaultPick(z)]), ['GGE', 'GER', 'GER', 'GER', 'ERR']);
+});
+ok('spectrum: center GER is balanced; side GERs lean Grounded / Ripe', () => {
+  const mid = SP.areas(0.5, 'GER'), mid2 = SP.areas(0.45, 'GER'), mid3 = SP.areas(0.55, 'GER');
+  assert.strictEqual(mid.g1, mid.r1); assert.strictEqual(mid2.g1, mid2.r1); assert.strictEqual(mid3.g1, mid3.r1);
+  const gSide = SP.areas(0.3, 'GER'), rSide = SP.areas(0.7, 'GER');
+  assert(gSide.g1 > gSide.r1, 'Grounded larger in the Grounded-to-center zone');
+  assert(rSide.r1 > rSide.g1, 'Ripe larger in the center-to-Ripe zone');
+  assert(Math.abs(gSide.g1 - rSide.r1) < 1e-9, 'mirror images');
+});
+ok('spectrum: area shifts monotonically with the handle outside the center', () => {
+  assert(SP.areas(0.1, 'GE').g1 > SP.areas(0.3, 'GER').g1); assert(SP.areas(0.9, 'ER').r1 > SP.areas(0.7, 'GER').r1);
 });
 ok('companion stays in the same territory, distinct and not competing with Evergreen', () => {
   for (const [k, h] of [['grounded', 45], ['grounded', 250], ['ripe', 25], ['ripe', 300]]) {

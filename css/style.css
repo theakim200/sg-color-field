@@ -220,13 +220,6 @@ body.tech .combo .tech-only, body.tech .rec .tech-only { display: block; }
 .layout .lab { flex: 1; }
 .layout .code { font: 11px var(--mono); color: var(--muted); }
 .count-note { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-.names { display: flex; flex-direction: column; gap: 8px; }
-.name-row { display: flex; align-items: center; gap: 8px; }
-.name-row i { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .15); }
-.name-row input { flex: 1; min-width: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 4px 0; font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: .03em; color: var(--ink); }
-.name-row input:focus { outline: none; border-color: var(--deep); }
-.name-row input::placeholder { color: rgba(20, 32, 28, .3); font-weight: 400; }
-.name-row small { flex: none; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); width: 62px; }
 
 .stack-col { display: flex; flex-direction: column; }
 .stack { display: flex; flex-direction: column; height: 500px; }
@@ -241,7 +234,6 @@ body.tech .combo .tech-only, body.tech .rec .tech-only { display: block; }
 .stack .empty.on { opacity: 1; height: 10px; }
 .stack .empty[data-empty=top].on { margin-bottom: 12px; } .stack .empty[data-empty=bottom].on { margin-top: 12px; }
 .slot .b-label { font-size: clamp(16px, 2.6vw, 28px); font-weight: 500; letter-spacing: -.01em; text-transform: uppercase; }
-.slot .b-name { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .85; min-height: 14px; }
 .slot .b-hex { font: 11px var(--mono); opacity: .7; }
 .stack-hint { margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
 .axis-col { display: flex; flex-direction: row; gap: 12px; align-items: stretch; position: relative; }
@@ -265,4 +257,6 @@ body.tech .combo .tech-only, body.tech .rec .tech-only { display: block; }
 .layout .lab { flex: 1 1 130px; min-width: 0; }
 .stack .slot.compact { flex-direction: row; gap: 10px; }
 .stack .slot.compact .b-label { font-size: 15px; }
-.stack .slot.compact .b-name, .stack .slot.compact .b-hex { display: none; }
+.stack .slot.compact .b-hex { display: none; }
+
+.layout .lead { display: block; font-size: 11px; color: var(--muted); letter-spacing: .04em; }
