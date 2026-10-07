@@ -8,7 +8,9 @@ To run with the font locally, place these files in this folder:
 - `GTAmerica-Compressed-Black-Trial.otf`
 - (optional, not currently used) `…-Bold-Italic-Trial.otf`, `…-Black-Italic-Trial.otf`, `…-Light-Italic-Trial.otf`
 
-Without them the page falls back to Helvetica Neue / Arial.
+Without them the display type falls back to Helvetica Neue / Arial.
+
+**Where it is used.** GT America Compressed Bold is the display face (`--font-display`: column titles, color names, hex headline, big numerals). Body copy, labels and data use the system sans (`--font-text`) because the trial files include no Regular or Light upright. When a lighter GT America cut is licensed, add an `@font-face` for it and set `--font-text` to it to use GT America everywhere.
 
 Before launch, license GT America (web) and replace the trial files; then update the `@font-face` URLs in `css/style.css` if the file names differ.
 

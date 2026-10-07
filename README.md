@@ -16,8 +16,9 @@ OKLCH values, scores and contrast numbers are in the **Technical view** drawer (
 The previous scrolling layout is archived in `archive/` (single self-contained HTML, commit `6e821b5`).
 
 ## Look
-Palette: Evergreen (`#00A810`), white, black, and neutral grays. Status is carried by form, not hue (good = Evergreen tint, caution = outlined, avoid = solid black). Color swatches and the color field are the only other colors on screen, because they are the content.
-Type: GT America Compressed, Bold for text and Black for headings (see `fonts/README.md`).
+iOS tone: grouped gray background, white cards with soft shadows instead of strokes, large radii, segmented controls, white round slider handles, a translucent header and an Evergreen toggle.
+Palette: Evergreen (`#00A810`), white, black, and iOS system grays. Status is carried by form, not hue (good = Evergreen tint, caution = gray fill, avoid = solid black). Color swatches and the color field are the only other colors on screen, because they are the content.
+Type: GT America Compressed (Bold) for display (titles, color names, big numerals) and the system sans (SF on Apple devices) for body and data, because the supplied trial has no lighter upright weight. Tokens `--font-display` / `--font-text` in `css/style.css`; see `fonts/README.md`.
 
 ## Architecture
 | File | Role |

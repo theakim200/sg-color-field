@@ -259,15 +259,15 @@
   }
 
   /* ---------- 4. Apply ---------- */
-  const val = (label, text, copy) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="Copy ${label}"><span>${label}</span><code>${text}</code></button>`;
+  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
 
   function crow(o) {
     const g = E.guidance(o.hex, o.c), s = o.spec;
     if (o.key === 'evergreen') g.tags = g.tags.filter((t) => !/Evergreen|accent/.test(t.text)).concat({ text: 'The constant', tone: 'good' });
     return `<div class="crow"><span class="crow-sw" style="background:${o.hex}"></span><div style="min-width:0">
       <div class="crow-title"><b>${o.label}</b><span>${o.role[0].toUpperCase() + o.role.slice(1)}${o.anchor ? ' · Anchor' : ''}</span></div>
-      <div class="crow-vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK≈', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`)}${val('OKLCH', s.oklchText.replace(/^oklch\(|\)$/g, ''), s.oklchText)}</div>
-      <div class="tags crow-tags">${g.tags.slice(0, 2).map(tagHtml).join('')}</div></div></div>`;
+      <div class="crow-vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
+      <div class="tags crow-tags">${g.tags.slice(0, 1).map(tagHtml).join('')}</div></div></div>`;
   }
 
   function matrixHtml(order) {
@@ -310,7 +310,7 @@
     const cards = cur.chipItems.map((it, i) => {
       const m = T.membership(it.c), r = ev.rels[i];
       return `<div class="tcard"><div class="tcard-h"><i style="background:${it.hex}"></i>${it.label} <span class="mono">${it.hex}</span></div>
-        <div class="mono">${it.spec.oklchText}<br>${depthPhrase(it.c, it.key)} · depth ${m.depth.toFixed(2)} (${m.status})</div>
+        <div class="mono">${it.spec.oklchText} · CMYK≈ ${it.spec.cmyk.join(' ')} · RGB ${it.spec.rgb.join(', ')}<br>${depthPhrase(it.c, it.key)} · depth ${m.depth.toFixed(2)} (${m.status})</div>
         <div style="margin-top:6px">${bar('Evergreen fit', r.score)}${Object.entries(r.parts).map(([k, v]) => bar(k, v)).join('')}</div>
         <div class="mono">ΔE(OK) ${r.metrics.dE.toFixed(3)} · ΔL ${r.metrics.dL.toFixed(2)} · hue Δ ${r.metrics.dh.toFixed(0)}° · C ratio ${r.metrics.cRatio.toFixed(2)}</div>
         <div class="tags" style="margin-top:6px">${E.guidance(it.hex, it.c).tags.map(tagHtml).join('')}</div></div>`;
