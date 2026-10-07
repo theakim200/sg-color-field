@@ -42,14 +42,35 @@
   </section>
 
   <section id="expression" class="panel">
-    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>What energy should this moment have? Evergreen is always part of it.</p></div></header>
-    <div class="cards" id="expression-cards" role="radiogroup" aria-label="Expression"></div>
-    <div class="lean" id="lean" hidden>
-      <span class="lean-label">Lean</span>
-      <div class="seg" role="radiogroup" aria-label="Lean">
-        <button data-action="lean" data-v="grounded" role="radio">Grounded-led</button>
-        <button data-action="lean" data-v="balanced" role="radio">Balanced</button>
-        <button data-action="lean" data-v="ripe" role="radio">Ripe-led</button>
+    <header class="panel-head"><span class="num">1</span><div><h2>Choose an expression</h2><p>Slide between Ripe and Grounded. Evergreen stays in the middle, always.</p></div></header>
+    <div class="composer">
+      <div class="comp-left">
+        <input id="season" class="season" type="text" maxlength="32" placeholder="SEASONAL" autocomplete="off" aria-label="Season or campaign name (optional)">
+        <div class="bal">
+          <div class="bal-title">Balance</div>
+          <div class="bal-row"><span class="bal-end">R</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Ripe and Grounded"><span class="bal-end">G</span></div>
+          <div class="bal-zones" id="bal-zones" aria-hidden="true"></div>
+        </div>
+        <div class="layouts" id="layouts" role="radiogroup" aria-label="Color chip layout"></div>
+        <div id="count-note" class="count-note"></div>
+        <div class="names" id="names"></div>
+      </div>
+      <div class="stack-col">
+        <div class="stack" id="stack" role="group" aria-label="Color balance preview">
+          <div class="empty" data-empty="top"></div>
+          <button class="slot" data-id="r1" data-action="chip"></button>
+          <button class="slot" data-id="r2" data-action="chip"></button>
+          <button class="slot slot-e" data-id="e" data-action="chip"></button>
+          <button class="slot" data-id="g1" data-action="chip"></button>
+          <button class="slot" data-id="g2" data-action="chip"></button>
+          <div class="empty" data-empty="bottom"></div>
+        </div>
+        <p class="stack-hint">Select a color to edit it in step 2.</p>
+      </div>
+      <div class="axis-col" aria-hidden="true">
+        <div class="ax-text ax-top">Vibrant / Expressive / Juicy / Abundant / Full</div>
+        <div class="ax-line"></div>
+        <div class="ax-text ax-bot">Rooted / Substantial / Calm / Savory / Earthy</div>
       </div>
     </div>
   </section>
@@ -97,6 +118,7 @@
 
 <script src="js/color.js"></script>
 <script src="js/territories.js"></script>
+<script src="js/spectrum.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/app.js"></script>
 </body>

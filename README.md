@@ -14,6 +14,7 @@ Tests: `node tests/engine.test.js`
 |---|---|
 | `js/color.js` | OKLCH ↔ sRGB, gamut fitting, OKLab distance, WCAG + APCA, CMYK (indicative) |
 | `js/territories.js` | Grounded / Ripe as **hue-dependent regions** (keypoint table every 30°, interpolated), membership + depth, `colorAt`, `snapInto`. Brand constants in `CONFIG` |
+| `js/spectrum.js` | The Ripe↔Grounded balance: which chip combinations are allowed in each zone, the 3-chip cap, and the visual area of each chip |
 | `js/engine.js` | Evergreen relationship, Grounded↔Ripe compatibility, counterpart recommendation, contrast levels, brand-use guidance tags, Dominant/Supporting/Accent hierarchy, production values. All thresholds in `PARAMS` |
 | `js/app.js` | UI: Expression → Explore → Build → Apply. Translates engine output into brand language; numbers appear only under **Technical view** |
 
@@ -23,8 +24,23 @@ Tests: `node tests/engine.test.js`
 - Cross-territory compatibility → `engine.pairCompat`, `engine.trio`
 - Counterparts from approved territory only → `engine.recommend`
 - Contrast & guidance ("Approved for text", "Use with dark type"…) → `engine.guidance`
-- Roles, no fixed ratios → `engine.hierarchy`
+- Roles follow visual area, no fixed ratios → `engine.hierarchy`
+- Multi-chip combinations (every chip vs Evergreen, Grounded×Ripe pairs, same-territory spacing) → `engine.evaluate`; companion chip in the same territory → `engine.companion`
 - Output (HEX/RGB/CMYK/OKLCH, combinations, CSS, JSON, shareable link) → `app.js` Apply
+
+## The balance handlebar
+Evergreen is always present and never counted. At most **3 other chips**; 3 is possible but flagged *not recommended*.
+The handlebar (R left, G right) moves through five zones, Grounded end to Ripe end. Letters: G Grounded, E Evergreen, R Ripe; the first layout in each zone is the default.
+
+| Zone | Layouts |
+|---|---|
+| Grounded end | `GGE` |
+| | `GE`, `GER` |
+| Middle | `GER`, `GGER` (3 chips) |
+| | `ERR`, `GERR` (3 chips) |
+| Ripe end | `ER` |
+
+Edit `ZONES` in `js/spectrum.js` to change this. Roles (Dominant / Supporting / Accent) follow each chip's visual area, which follows the handle, so Evergreen leads in the middle and gives way at the extremes.
 
 ## Needs calibration before launch
 1. **Territory tables are provisional.** They are seeded from general color knowledge and sRGB gamut limits, not from approved Sweetgreen samples. Follow *Visual → Sample → Measure → Rule*: classify a large set as approved / borderline / outside, measure it in OKLCH, and replace the tables in `territories.js`. The `core`/`edge` margin is `CONFIG.coreDepth`.

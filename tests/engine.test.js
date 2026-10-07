@@ -1,7 +1,7 @@
 // Run: node tests/engine.test.js
 const assert = require('assert');
-require('../js/color.js'); require('../js/territories.js'); require('../js/engine.js');
-const { color: C, territories: T, engine: E } = globalThis.SG;
+require('../js/color.js'); require('../js/territories.js'); require('../js/spectrum.js'); require('../js/engine.js');
+const { color: C, territories: T, engine: E, spectrum: SP } = globalThis.SG;
 let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ok', name); };
 
 ok('hex <-> oklch round trip', () => {
@@ -54,12 +54,46 @@ ok('recommend returns approved-territory, non-competing, hue-diverse counterpart
   for (const r of recs) { assert.strictEqual(T.membership(r.color).territory, 'ripe'); assert.notStrictEqual(r.rel.verdict, 'competes'); }
   assert(new Set(recs.map((r) => Math.floor(r.color.h / 36))).size === recs.length);
 });
-ok('hierarchy: dominant must host type; Evergreen always present', () => {
-  const hexes = { evergreen: '#00A810', grounded: '#8A6B4F', ripe: '#FF5A36' };
-  for (const lean of ['grounded', 'balanced', 'ripe']) {
-    const h = E.hierarchy('both', lean, hexes);
-    assert.strictEqual(h.length, 3); assert(h.some((x) => x.key === 'evergreen')); assert.strictEqual(h[0].role, 'dominant');
+ok('hierarchy follows area; Evergreen always present; dominant can host type', () => {
+  const mk = (p, code) => { const A = SP.areas(p, code), hex = { e: '#00A810', g1: '#8A6B4F', g2: '#5C6B7A', r1: '#FF5A36', r2: '#F2A93B' };
+    return SP.ids(code).concat('e').map((id) => ({ id, key: id === 'e' ? 'evergreen' : id[0] === 'g' ? 'grounded' : 'ripe', hex: hex[id], area: A[id] })); };
+  for (const [p, code] of [[0.9, 'GGE'], [0.7, 'GE'], [0.5, 'GER'], [0.5, 'GGER'], [0.3, 'GERR'], [0.3, 'ERR'], [0.1, 'ER']]) {
+    const h = E.hierarchy(mk(p, code));
+    assert(h.some((x) => x.key === 'evergreen')); assert.strictEqual(h[0].role, 'dominant');
+    assert(E.bestForeground(h[0].hex).level !== 'fail', code);
   }
+  assert.strictEqual(E.hierarchy(mk(0.5, 'GER'))[0].key, 'evergreen', 'balanced: Evergreen leads');
+  assert.strictEqual(E.hierarchy(mk(0.9, 'GGE'))[0].key, 'grounded', 'Grounded end: Grounded leads');
+});
+ok('spectrum: every combo has at most 3 chips (Evergreen excluded) and 3-chip combos are flagged', () => {
+  const all = SP.ZONES.flatMap((z) => z.combos);
+  assert.deepStrictEqual([...new Set(all)].sort(), ['ER', 'ERR', 'GE', 'GER', 'GERR', 'GGE', 'GGER']);
+  for (const c of all) { const q = SP.parse(c); assert(q.valid && q.chips <= SP.MAX_CHIPS, c); assert.strictEqual(q.recommended, q.chips <= 2, c); }
+  assert.strictEqual(SP.parse('GGER').recommended, false); assert.strictEqual(SP.parse('GERR').recommended, false);
+});
+ok('spectrum: zones run Grounded end -> Ripe end and cover 0..1', () => {
+  assert.strictEqual(SP.zoneIndex(1), 0); assert.strictEqual(SP.zoneIndex(0), SP.ZONES.length - 1);
+  for (let p = 0; p <= 1; p += 0.01) assert(SP.zoneIndex(p) >= 0);
+  assert(SP.ZONES[0].combos.every((c) => !c.includes('R')), 'Grounded end has no Ripe');
+  assert(SP.ZONES.at(-1).combos.every((c) => !c.includes('G')), 'Ripe end has no Grounded');
+});
+ok('spectrum: area shifts monotonically with the balance', () => {
+  assert(SP.areas(0.7, 'GER').g1 > SP.areas(0.3, 'GER').g1); assert(SP.areas(0.7, 'GER').r1 < SP.areas(0.3, 'GER').r1);
+});
+ok('companion stays in the same territory, distinct and not competing with Evergreen', () => {
+  for (const [k, h] of [['grounded', 45], ['grounded', 250], ['ripe', 25], ['ripe', 300]]) {
+    const b = T.bounds(k, h), a = T.colorAt(k, h, (b.Lmin + b.Lmax) / 2, 0.5), c = E.companion(k, a);
+    assert.strictEqual(T.membership(c).territory, k); assert(C.deltaE(a, c) > 0.07, `${k} ${h}`);
+    assert.notStrictEqual(E.evaluate([{ key: k, c }]).rels[0].verdict, 'competes');
+  }
+});
+ok('evaluate handles 1, 2 and 3 chips; 3 chips are not recommended', () => {
+  const g = T.colorAt('grounded', 45, 0.5, 0.5), r = T.colorAt('ripe', 25, 0.66, 0.6), g2 = E.companion('grounded', g);
+  assert.strictEqual(E.evaluate([{ key: 'ripe', c: r }]).recommended, true);
+  const two = E.evaluate([{ key: 'grounded', c: g }, { key: 'ripe', c: r }]);
+  assert(two.recommended && two.cross.length === 1);
+  const three = E.evaluate([{ key: 'grounded', c: g }, { key: 'grounded', c: g2 }, { key: 'ripe', c: r }]);
+  assert(!three.recommended && three.cross.length === 2 && three.same.length === 1 && three.score > 0 && three.score <= 1);
 });
 ok('guidance: bright Evergreen is large-type only (white 3.2:1, ink Lc 44)', () => {
   const g = E.guidance('#00A810', T.evergreen);

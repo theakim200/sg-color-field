@@ -159,18 +159,54 @@
     supporting: 'Secondary fields, panels, UI and type.',
     accent: 'Small, deliberate moments: buttons, tags, highlights.',
   };
-  /** structure: 'grounded' | 'ripe' | 'both'; lean (for both): 'grounded' | 'balanced' | 'ripe'. */
-  function hierarchy(structure, lean, hexes) {
-    let order;
-    if (structure === 'grounded') order = ['grounded', 'evergreen'];
-    else if (structure === 'ripe') order = ['ripe', 'evergreen'];
-    else if (lean === 'grounded') order = ['grounded', 'evergreen', 'ripe'];
-    else if (lean === 'ripe') order = ['ripe', 'evergreen', 'grounded'];
-    else order = ['evergreen', 'grounded', 'ripe'];
+  /** items: [{id, key, hex, area}] including Evergreen. Roles follow visual area, so they shift with the balance. */
+  function hierarchy(items) {
+    const order = [...items].sort((a, b) => b.area - a.area || (a.key === 'evergreen' ? -1 : b.key === 'evergreen' ? 1 : 0));
     // the dominant color has to be able to host type; otherwise it trades places with the next
-    if (order.length > 1 && bestForeground(hexes[order[0]]).level === 'fail' && bestForeground(hexes[order[1]]).level !== 'fail') order = [order[1], order[0], ...order.slice(2)];
-    const names = ['dominant', 'supporting', 'accent'];
-    return order.map((key, i) => ({ key, role: names[i], note: ROLE_NOTES[names[i]], anchor: key === 'evergreen' }));
+    if (order.length > 1 && bestForeground(order[0].hex).level === 'fail' && bestForeground(order[1].hex).level !== 'fail') [order[0], order[1]] = [order[1], order[0]];
+    return order.map((it, i) => {
+      const role = i === 0 ? 'dominant' : i === order.length - 1 && order.length >= 3 ? 'accent' : 'supporting';
+      return { ...it, role, note: ROLE_NOTES[role], anchor: it.key === 'evergreen' };
+    });
+  }
+
+  /* ---------- Multi-chip combinations ---------- */
+  const avg = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+
+  /** A companion inside the same territory: distinct from the chosen color, still clear of Evergreen. */
+  function companion(key, chosen) {
+    const t = T.intensityOf(key, chosen);
+    let best = null;
+    for (const dh of [35, -35, 60, -60, 90, -90, 130, -130, 180]) for (const lf of [0.2, 0.5, 0.8]) {
+      const h = (chosen.h + dh + 360) % 360, b = T.bounds(key, h);
+      const col = T.colorAt(key, h, b.Lmin + lf * (b.Lmax - b.Lmin), t), m = T.membership(col);
+      if (m.territory !== key || m.status !== 'core') continue;
+      const rel = evergreenRelationship(col);
+      if (rel.verdict === 'competes') continue;
+      const score = ramp(C.deltaE(col, chosen), 0.08, 0.2) * 0.5 + rel.score * 0.5 - 0.0005 * Math.abs(dh);
+      if (!best || score > best.score) best = { col, score };
+    }
+    return best ? best.col : T.snapInto(key, { ...chosen, h: (chosen.h + 40) % 360 });
+  }
+
+  /** Evaluate every chip against Evergreen, every Grounded x Ripe pair, and same-territory pairs. chips: [{key, c}] */
+  function evaluate(chips) {
+    const rels = chips.map((x) => evergreenRelationship(x.c));
+    const gs = chips.filter((x) => x.key === 'grounded'), rs = chips.filter((x) => x.key === 'ripe');
+    const cross = [];
+    gs.forEach((g) => rs.forEach((r) => cross.push(pairCompat(g.c, r.c))));
+    const same = [];
+    for (const grp of [gs, rs]) for (let i = 0; i < grp.length; i++) for (let j = i + 1; j < grp.length; j++) same.push(ramp(C.deltaE(grp[i].c, grp[j].c), 0.07, 0.16));
+    const parts = [[avg(rels.map((r) => r.score)), 0.35]];
+    if (cross.length) parts.push([avg(cross.map((x) => x.score)), 0.45]);
+    if (same.length) parts.push([avg(same), 0.2]);
+    const wsum = parts.reduce((s, [, w]) => s + w, 0);
+    const score = parts.reduce((s, [v, w]) => s + v * w, 0) / wsum;
+    const notes = [];
+    if (cross.length) notes.push(avg(cross.map((x) => x.parts.spread)) >= 0.5 ? 'Clear lightness difference between Grounded and Ripe.' : 'Grounded and Ripe sit at similar depth; let type and Evergreen create the contrast.');
+    if (cross.length && Math.min(...cross.map((x) => x.parts.distinct)) < 0.4) notes.push('A Grounded and a Ripe color sit close together.');
+    if (same.length && Math.min(...same) < 0.5) notes.push('Two colors in the same territory sit close together; separate them more.');
+    return { score, rels, cross, same, notes, chips: chips.length, recommended: chips.length <= SG.spectrum.RECOMMENDED_MAX };
   }
 
   /** Production values for one color. Re-derives OKLCH from the final HEX so the two always agree. */
@@ -179,6 +215,6 @@
     return { hex, rgb: [r, g, b], cmyk: C.cmyk(hex), oklch: final, oklchText: C.oklchString(final) };
   }
 
-  SG.engine = { PARAMS, hueHarmony, evergreenRelationship, pairCompat, trio, recommend, contrastLevel, foregrounds, bestForeground, guidance, hierarchy, spec };
+  SG.engine = { PARAMS, hueHarmony, evergreenRelationship, pairCompat, trio, recommend, companion, evaluate, contrastLevel, foregrounds, bestForeground, guidance, hierarchy, spec };
   if (typeof module !== 'undefined') module.exports = SG.engine;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
