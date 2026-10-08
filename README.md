@@ -10,15 +10,15 @@ Static site, no build step. Open `index.html`, or `python3 -m http.server 8080`.
 Tests: `node tests/engine.test.js`
 
 ## Layout
-One screen, no scrolling. The colors appear **once, large, on a central stage**; tools float around it:
-- **Left, Expression**: the G-to-R balance handlebar, layout choices for the current zone, how the combination reads, and a key to the stage.
-- **Stage**: each color block carries its role (Dominant / Supporting / Accent, Anchor for Evergreen) and which type works on it (Aa with a body / large / avoid mark). A Blocks / Composition switch shows the same colors as a layout. The faint wash behind the stage follows the dominant color.
-- **Right, selected color**: color field, intensity, HEX check, copyable values and usage guidance for the color selected on the stage.
-- **Bottom dock**: counterpart suggestions from the other territory.
-- **Top bar**: view switch, copy CSS / JSON / link, Technical view.
-OKLCH values, scores and contrast numbers are in the **Technical view** sheet (Esc closes). Below ~1040px wide the tools stack and the page scrolls.
+One screen, no scrolling, three columns:
+- **Left**: 1 Choose an expression (balance handlebar G to R, layouts), 2 Explore color (chip tabs, color field, intensity, HEX check, how the combination reads), 2.5 Explore counterparts (opens and closes).
+- **Center stage**: the colors, once and large. Each block shows its role (Dominant / Supporting / Accent, Anchor for Evergreen). Hover or focus a block for its usage guidance. Click a block to edit it.
+- **Right**: 4 Apply: copyable values (HEX, RGB, CMYK, OKLCH) with usage tags, a Type-on-color matrix, and CSS variables / JSON / Add to library / Copy link.
+- **Top bar**: About, Library (combinations saved in this browser), Technical (OKLCH values, scores, contrast numbers; Esc closes any sheet).
 
-Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns), each a single self-contained HTML plus a commit hash.
+Heights from about 780px fit everything; on shorter screens secondary detail is dropped and, in the rarest case (3 colors with counterparts open below ~770px), the left column scrolls inside itself. Below ~1040px wide the columns stack and the page scrolls.
+
+Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v3 central stage), each a single self-contained HTML plus a commit hash.
 
 ## Look
 iOS tone: grouped gray background, white cards with soft shadows instead of strokes, large radii, segmented controls, white round slider handles, a translucent header and an Evergreen toggle.
@@ -32,7 +32,7 @@ Type: GT America Compressed (Bold) for display (titles, color names, big numeral
 | `js/territories.js` | Grounded / Ripe as **hue-dependent regions** (keypoint table every 30°, interpolated), membership + depth, `colorAt`, `snapInto`. Brand constants in `CONFIG` |
 | `js/spectrum.js` | The Ripe↔Grounded balance: which chip combinations are allowed in each zone, the 3-chip cap, and the visual area of each chip |
 | `js/engine.js` | Evergreen relationship, Grounded↔Ripe compatibility, counterpart recommendation, contrast levels, brand-use guidance tags, Dominant/Supporting/Accent hierarchy, production values. All thresholds in `PARAMS` |
-| `js/app.js` | UI: stage, tool panels and dock. Translates engine output into brand language; numbers appear only under **Technical view** |
+| `js/app.js` | UI: left cards, stage, Apply card, sheets and library. Translates engine output into brand language; numbers appear only under **Technical view** |
 
 ## How the spec maps to code
 - Territory membership → `territories.membership` (core / edge / outside)

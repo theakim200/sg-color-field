@@ -12,49 +12,57 @@
 <div class="app" id="app">
   <header class="top">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <div><b>Color Field</b><small>Explore new color without leaving the Sweetgreen world.</small></div>
+      <b>Color Field</b>
+      <small>Explore new color without leaving the Sweetgreen world.</small>
     </div>
-    <div class="spectrum" aria-hidden="true">
-      <div class="spectrum-bar" id="spectrum-bar"></div>
-      <div class="spectrum-labels"><span>Grounded</span><span>← Evergreen →</span><span>Ripe</span></div>
-    </div>
-    <div class="top-actions">
-      <div class="seg" role="radiogroup" aria-label="Stage view">
-        <button data-action="view" data-v="blocks" role="radio">Blocks</button>
-        <button data-action="view" data-v="composition" role="radio">Composition</button>
-      </div>
-      <button class="btn" data-action="copy-css">CSS</button>
-      <button class="btn" data-action="copy-json">JSON</button>
-      <button class="btn btn-primary" data-action="copy-link">Copy link</button>
-      <label class="switch" title="Show OKLCH values, scores and contrast numbers">
-        <input id="tech-toggle" type="checkbox"><span class="track"></span><span>Technical</span>
-      </label>
-    </div>
+    <nav class="nav" aria-label="Main">
+      <button data-action="sheet" data-v="about">About</button>
+      <button data-action="sheet" data-v="library">Library</button>
+      <button data-action="sheet" data-v="technical">Technical</button>
+    </nav>
   </header>
 
-  <!-- left tool panel: expression -->
-  <aside class="panel left" id="left" aria-label="Expression">
-    <header class="panel-head"><div><h2>Expression</h2><p>Slide between Grounded and Ripe.</p></div></header>
-    <div class="panel-body">
+  <!-- left: expression, explore, counterparts -->
+  <div class="col-left" id="col-left">
+    <section class="card" id="expression" aria-labelledby="h-expression">
+      <header class="card-head"><span class="num">1</span><div><h2 id="h-expression">Choose an expression</h2><p>Slide between Grounded and Ripe.</p></div></header>
       <div class="bal">
         <div class="bal-row"><span class="bal-end">G</span><input id="balance" type="range" min="0" max="1000" step="1" aria-label="Balance between Grounded and Ripe"><span class="bal-end">R</span></div>
         <div class="bal-zones" id="bal-zones" aria-hidden="true"></div>
       </div>
       <div class="layouts" id="layouts" role="radiogroup" aria-label="Color chip layout"></div>
       <div id="count-note" class="count-note"></div>
-      <div class="combo" id="combo"></div>
-      <div class="legend" aria-label="How to read the stage">
-        <span class="sub">Reading the stage</span>
-        <p><b>Dominant / Supporting / Accent</b> shows each color's role and follows the balance.</p>
-        <p class="lg"><span class="lg-aa"><b>Aa</b><em>✓</em></span> body text <span class="lg-aa"><b>Aa</b><em>L</em></span> large text only <span class="lg-aa"><b>Aa</b><em>✕</em></span> avoid</p>
-        <p>Type colors shown on each block: white, ink, Evergreen and your other colors.</p>
-      </div>
-      <p class="hint">Select a color on the stage to edit it.</p>
-    </div>
-  </aside>
+    </section>
 
-  <!-- center stage: the colors, once -->
+    <section class="card card-explore" id="explore" aria-labelledby="h-explore">
+      <header class="card-head"><span class="num">2</span><div><h2 id="h-explore">Explore color</h2><p id="explore-sub"></p></div></header>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="field-wrap">
+        <canvas id="field" width="360" height="200" tabindex="0" role="slider" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection."></canvas>
+        <div class="marker" id="marker"></div>
+        <div class="ev-marker" id="ev-marker"><span>Evergreen</span></div>
+        <span class="axis axis-y">Lighter ↑</span><span class="axis axis-x">Hue →</span>
+      </div>
+      <div class="slider-row">
+        <div class="slider-body"><span id="intensity-lo"></span><input id="intensity" type="range" min="0" max="100" step="1" aria-labelledby="intensity-lo"><span id="intensity-hi"></span></div>
+      </div>
+      <div class="test">
+        <div class="test-row"><input id="hex-test" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button data-action="test-hex" class="btn">Check</button></div>
+        <div id="test-msg" class="test-msg" role="status" aria-live="polite"></div>
+      </div>
+      <div class="combo" id="combo"></div>
+    </section>
+
+    <section class="card card-cp" id="cp" aria-labelledby="h-cp">
+      <header class="card-head cp-head">
+        <span class="num num-sm">2.5</span><div><h2 id="h-cp">Explore counterparts</h2><p>Judged against Evergreen.</p></div>
+        <button class="btn cp-toggle" id="cp-toggle" data-action="cp-toggle" aria-expanded="false" aria-controls="cp-body">Open</button>
+      </header>
+      <div class="cp-body" id="cp-body" hidden></div>
+    </section>
+  </div>
+
+  <!-- center: the colors, once -->
   <main class="stage" id="stage" aria-label="Color stage">
     <div class="stage-inner">
       <div class="stack-wrap" id="stack-wrap">
@@ -69,41 +77,20 @@
         </div>
         <div class="ax-line" aria-hidden="true"></div>
       </div>
-      <div class="comp" id="comp" hidden></div>
     </div>
   </main>
 
-  <!-- bottom dock: counterparts -->
-  <div class="dock" id="dock"></div>
-
-  <!-- right tool panel: the selected color -->
-  <aside class="panel right" id="right" aria-label="Selected color">
-    <header class="panel-head insp-head">
-      <span class="insp-sw" id="insp-sw"></span>
-      <div class="insp-title"><h2 id="insp-title"></h2><p id="insp-sub"></p></div>
-    </header>
-    <div class="panel-body">
-      <div class="field-wrap">
-        <canvas id="field" width="360" height="200" tabindex="0" role="slider" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection."></canvas>
-        <div class="marker" id="marker"></div>
-        <div class="ev-marker" id="ev-marker"><span>Evergreen</span></div>
-        <span class="axis axis-y">Lighter ↑</span><span class="axis axis-x">Hue →</span>
-      </div>
-      <div class="slider-row">
-        <label for="intensity" id="intensity-label"></label>
-        <div class="slider-body"><span id="intensity-lo"></span><input id="intensity" type="range" min="0" max="100" step="1"><span id="intensity-hi"></span></div>
-      </div>
-      <div class="test">
-        <div class="test-row"><input id="hex-test" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button data-action="test-hex" class="btn">Check</button></div>
-        <div id="test-msg" class="test-msg" role="status" aria-live="polite"></div>
-      </div>
-      <div id="insp-use" class="insp-use"></div>
-    </div>
-  </aside>
+  <!-- right: apply -->
+  <div class="col-right" id="col-right">
+    <section class="card" id="apply" aria-labelledby="h-apply">
+      <header class="card-head"><span class="num">4</span><div><h2 id="h-apply">Apply</h2><p>How to use these colors.</p></div></header>
+      <div id="apply-body"></div>
+    </section>
+  </div>
 </div>
 
-<aside class="drawer" id="drawer" aria-label="Technical view" hidden>
-  <header class="drawer-head"><h3>Under the hood</h3><button class="mini" data-action="close-tech" aria-label="Close technical view">Close</button></header>
+<aside class="drawer" id="drawer" aria-label="Sheet" hidden>
+  <header class="drawer-head"><h3 id="drawer-title"></h3><button class="mini" data-action="close-sheet" aria-label="Close">Close</button></header>
   <div class="drawer-body" id="drawer-body"></div>
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

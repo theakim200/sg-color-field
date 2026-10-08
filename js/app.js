@@ -1,10 +1,9 @@
 /* Front end. Translates the engine's technical results into brand language.
-   Layout: the colors appear once, large, on a central stage; tools float around it.
-     left   = Expression (balance handlebar, layout, how the combination reads)
-     stage  = the colors, each carrying its role and which type works on it
-     right  = the selected color (field, intensity, HEX check, values, usage)
-     bottom = counterpart suggestions
-   Numbers (OKLCH, scores, contrast) live in the Technical view sheet.
+   Layout (left to right):
+     left   = 1 Choose an expression, 2 Explore color, 2.5 Explore counterparts (opens/closes)
+     stage  = the colors, once, large. Hover a color for its usage guidance.
+     right  = 4 Apply: values, which type works on which color, export, library
+   Sheets from the top bar: About, Library, Technical (OKLCH, scores, contrast numbers).
 
    Model: Evergreen is always present. Up to 3 more chips (Grounded g1/g2, Ripe r1/r2).
    The balance handlebar picks a zone; each zone allows specific combinations (js/spectrum.js). */
@@ -19,13 +18,14 @@
   const terrOf = (id) => (id[0] === 'g' ? 'grounded' : 'ripe');
   const LEVEL = { body: ['Body text', 'good', '✓'], large: ['Large text only', 'warn', 'L'], fail: ['Avoid', 'bad', '✕'] };
   const ROLE_LABEL = { dominant: 'Dominant', supporting: 'Supporting', accent: 'Accent' };
+  const LIB_KEY = 'sg-color-field:library:v1';
 
   const seed = { g1: T.colorAt('grounded', 45, 0.5, 0.5), r1: T.colorAt('ripe', 25, 0.66, 0.6) };
   seed.g2 = E.companion('grounded', seed.g1);
   seed.r2 = E.companion('ripe', seed.r1);
 
   const S = {
-    p: 0.5, picks: {}, tech: false, active: 'r1', view: 'blocks',
+    p: 0.5, picks: {}, sheet: null, active: 'r1', cpOpen: false,
     chips: { ...seed },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
     recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null,
@@ -66,30 +66,69 @@
     return m.status === 'core' ? `Deep in ${TERRITORIES[key].label}` : `Edge of ${TERRITORIES[key].label}`;
   }
 
+  /** Usage guidance for one color. Evergreen is the reference, so it is never compared with itself. */
+  function guidanceFor(it) {
+    const g = E.guidance(it.hex, it.c);
+    let tags = g.tags, note = g.rel.notes[0];
+    if (it.key === 'evergreen') {
+      tags = tags.filter((t) => !/Evergreen|accent/.test(t.text)).concat({ text: 'Works as a field with large type or logo', tone: 'info' }, { text: 'The constant', tone: 'good' });
+      note = 'Evergreen is the constant. Every color is judged against it.';
+    }
+    return { tags, note, rel: g.rel, best: g.best };
+  }
+
   /* ---------- URL state (shareable) ---------- */
   function writeHash() {
     const q = new URLSearchParams({ v: '2', p: S.p.toFixed(3), c: cur.code, pk: JSON.stringify(S.picks) });
     CHIP_IDS.forEach((id) => q.set(id, E.spec(S.chips[id]).hex.slice(1)));
     history.replaceState(null, '', '#' + q.toString());
   }
-  function readHash() {
-    const q = new URLSearchParams(location.hash.slice(1));
-    const p = parseFloat(q.get('p')), current = q.get('v') === '2'; // v1 links used the opposite slider direction and other zones
-    if (current && p >= 0 && p <= 1) S.p = p;
-    try { if (!current) throw 0; const pk = JSON.parse(q.get('pk') || '{}'); if (pk && typeof pk === 'object') for (const z of SP.ZONES) if (Number.isInteger(pk[z.id]) && pk[z.id] >= 0 && pk[z.id] < z.combos.length) S.picks[z.id] = pk[z.id]; } catch (e) { /* ignore */ }
+  function applyState({ p, picks, hex }) {
+    if (typeof p === 'number' && p >= 0 && p <= 1) S.p = p;
+    S.picks = {};
+    for (const z of SP.ZONES) if (picks && Number.isInteger(picks[z.id]) && picks[z.id] >= 0 && picks[z.id] < z.combos.length) S.picks[z.id] = picks[z.id];
     for (const id of CHIP_IDS) {
-      const c = q.get(id) && C.fromHex(q.get(id));
+      const c = hex && hex[id] && C.fromHex(hex[id]);
       if (!c) continue;
       const k = terrOf(id);
       S.chips[id] = T.membership(c).territory === k ? c : T.snapInto(k, c); // never load a color outside its territory
       S.t[id] = T.intensityOf(k, S.chips[id]);
     }
   }
+  function readHash() {
+    const q = new URLSearchParams(location.hash.slice(1));
+    if (q.get('v') !== '2') { // v1 links used the opposite slider direction and other zones: keep the colors only
+      applyState({ hex: Object.fromEntries(CHIP_IDS.map((id) => [id, q.get(id)])) });
+      return;
+    }
+    let picks = {};
+    try { picks = JSON.parse(q.get('pk') || '{}') || {}; } catch (e) { /* ignore */ }
+    applyState({ p: parseFloat(q.get('p')), picks, hex: Object.fromEntries(CHIP_IDS.map((id) => [id, q.get(id)])) });
+  }
 
-  /* ---------- left: expression ---------- */
+  /* ---------- library (saved combinations, kept in this browser) ---------- */
+  let memLib = [];
+  function loadLib() {
+    try { const v = JSON.parse(localStorage.getItem(LIB_KEY) || 'null'); if (Array.isArray(v)) return v; } catch (e) { /* storage unavailable */ }
+    return memLib;
+  }
+  function saveLib(list) {
+    memLib = list;
+    try { localStorage.setItem(LIB_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+  }
+  function addToLibrary() {
+    const list = loadLib();
+    const hex = Object.fromEntries(CHIP_IDS.map((id) => [id, E.spec(S.chips[id]).hex]));
+    list.unshift({ id: Date.now().toString(36), savedAt: Date.now(), p: +S.p.toFixed(3), picks: { ...S.picks }, code: cur.code, hex });
+    const ok = saveLib(list.slice(0, 60));
+    toast(ok ? 'Added to library' : 'Added for this visit (browser storage is off)');
+    if (S.sheet === 'library') renderSheet();
+  }
+
+  /* ---------- 1. expression ---------- */
   const overallLabel = (s) => (s >= 0.72 ? ['Strong match', 'good'] : s >= 0.55 ? ['Good match', 'info'] : ['Use with care', 'warn']);
 
-  function renderLeft() {
+  function renderExpression() {
     $('#balance').value = Math.round(S.p * 1000);
     $('#bal-zones').innerHTML = SP.ZONES.map((z) => `<span class="zone${z.id === cur.z.id ? ' on' : ''}">${z.combos.join('<br>')}</span>`).join('');
 
@@ -97,69 +136,31 @@
       const q = SP.parse(code);
       const dots = [...SP.ids(code).filter((x) => x[0] === 'g'), 'e', ...SP.ids(code).filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
       return `<button class="layout${i === cur.pick ? ' on' : ''}" data-action="layout" data-v="${i}" role="radio" aria-checked="${i === cur.pick}">
-        <span class="dots">${dots}</span><span class="lab">${SP.label(code)}${cur.z.lead ? `<small class="lead">${cur.z.lead === 'grounded' ? 'Grounded-led' : 'Ripe-led'}</small>` : ''}</span>${q.recommended ? '' : '<span class="tag tag-warn">Not recommended</span>'}</button>`;
+        <span class="dots">${dots}</span><span class="lab">${SP.label(code)}<small class="lead">${[cur.z.lead ? (cur.z.lead === 'grounded' ? 'Grounded-led' : 'Ripe-led') : '', q.recommended ? '' : 'not recommended'].filter(Boolean).join(' · ')}</small></span></button>`;
     }).join('');
 
     const n = cur.q.chips;
     $('#count-note').innerHTML = n >= 3
       ? `<span class="tag tag-warn">3 colors: possible, not recommended</span><span>Two is the recommended maximum.</span>`
       : `<span class="tag tag-good">${n} ${n === 1 ? 'color' : 'colors'} + Evergreen</span>`;
+    $('#app').style.setProperty('--tint', rgba(cur.ranked[0].hex, 0.12));
+  }
+
+  /* ---------- 2. explore ---------- */
+  function renderExplore() {
+    const key = activeKey(), terr = TERRITORIES[key];
+    $('#tabs').hidden = cur.chipItems.length < 2;
+    $('#tabs').innerHTML = cur.chipItems.map((it) => `<button role="tab" aria-selected="${S.active === it.id}" class="${S.active === it.id ? 'on' : ''}" data-action="chip" data-v="${it.id}"><i style="background:${it.hex}"></i>${it.label}</button>`).join('');
+    $('#explore-sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
+    $('#intensity-lo').textContent = terr.slider[0];
+    $('#intensity-hi').textContent = terr.slider[1];
+    $('#intensity').value = Math.round(S.t[S.active] * 100);
+    drawField();
 
     const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
     $('#combo').innerHTML = `<span class="sub">This combination</span><div class="tags"><span class="tag tag-${tone}">${lab}</span></div><p>${ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.'}</p>`;
-
-    // chrome that follows the selection
-    const g = cur.byId.g1 ? cur.byId.g1.hex : CONFIG.evergreenHex, r = cur.byId.r1 ? cur.byId.r1.hex : CONFIG.evergreenHex;
-    $('#spectrum-bar').style.background = `linear-gradient(90deg, ${g}, ${CONFIG.evergreenHex} 50%, ${r})`;
-    $('#app').style.setProperty('--tint', rgba(cur.ranked[0].hex, 0.16));
-    $$('[data-action=view]').forEach((b) => { const on = b.dataset.v === S.view; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
   }
 
-  /* ---------- stage: the colors, once ---------- */
-  function typeSamples(it) {
-    const extras = cur.chipItems.filter((c) => c.id !== it.id).map((c) => [c.label, c.hex]);
-    return E.foregrounds(it.hex, extras).map((f) => {
-      const [lab, , mark] = LEVEL[f.level];
-      return `<span class="ts lvl-${f.level}" style="color:${f.fg}" title="${f.name} type on ${it.label}: ${lab}"><b>Aa</b><em>${mark}</em></span>`;
-    }).join('');
-  }
-
-  function renderStage() {
-    $('#stack-wrap').hidden = S.view !== 'blocks';
-    $('#comp').hidden = S.view !== 'composition';
-    if (S.view === 'composition') { $('#comp').innerHTML = posterHtml(cur.ranked); return; }
-
-    const stack = $('#stack');
-    let first = true;
-    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
-      const el = $(`.slot[data-id=${id}]`, stack), it = cur.byId[id];
-      if (!it) { el.classList.remove('on', 'first', 'sel'); el.style.flexGrow = 0; el.tabIndex = -1; return; }
-      const isFirst = first, role = cur.roles[id]; first = false;
-      el.classList.add('on'); el.classList.toggle('first', isFirst);
-      el.classList.toggle('sel', S.active === id);
-      el.classList.toggle('compact', it.area < 0.5);
-      el.classList.toggle('small', it.area < 0.6);
-      el.style.flexGrow = it.area; el.style.background = it.hex; el.style.color = inkOrWhite(it.hex); el.tabIndex = id === 'e' ? -1 : 0;
-      el.setAttribute('aria-label', `${it.label}, ${it.hex}, ${ROLE_LABEL[role.role]}`);
-      el.innerHTML = `<span class="b-role"><em>${ROLE_LABEL[role.role]}</em>${role.anchor ? '<em>Anchor</em>' : ''}</span>
-        <span class="b-label">${it.label}</span><span class="b-hex">${it.hex}</span><span class="b-type">${typeSamples(it)}</span>`;
-    });
-    $('[data-empty=top]', stack).classList.toggle('on', !cur.hasR);
-    $('[data-empty=bottom]', stack).classList.toggle('on', !cur.hasG);
-  }
-
-  function posterHtml(order) {
-    const n = order.length;
-    const blocks = order.map((o) => {
-      const tag = `<small>${o.label}${o.anchor ? ' · Anchor' : ''}</small>`;
-      const inner = o.role === 'dominant' ? `${tag}<h4>In season, right now.</h4><p>Fresh ingredients, thoughtfully grown.</p>`
-        : o.role === 'accent' ? `${tag}<span class="pill">Order now</span>` : `${tag}<p>Secondary information.</p>`;
-      return `<button class="b b-${o.role}${S.active === o.id ? ' sel' : ''}" data-action="chip" data-id="${o.id}" style="background:${o.hex};color:${inkOrWhite(o.hex)}" aria-label="${o.label}">${inner}</button>`;
-    });
-    return `<div class="poster n${n}" style="${n >= 3 ? `grid-template-rows:repeat(${n - 1},1fr)` : ''}" aria-label="Composition preview, illustrative proportions">${blocks.join('')}</div>`;
-  }
-
-  /* ---------- right: the selected color ---------- */
   function buildField(key, t) {
     const { w, h, Ltop, Lbot } = FIELD;
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -201,25 +202,6 @@
     ev.style.background = CONFIG.evergreenHex;
   }
 
-  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
-
-  function renderInspector() {
-    const key = activeKey(), terr = TERRITORIES[key], it = cur.byId[S.active], s = it.spec, g = E.guidance(it.hex, it.c);
-    $('#insp-sw').style.background = it.hex;
-    $('#insp-title').textContent = it.label;
-    $('#insp-sub').textContent = `${depthPhrase(it.c, key)} · ${cur.roles[it.id] ? ROLE_LABEL[cur.roles[it.id].role] : ''}`;
-    $('#intensity-label').textContent = `How ${key === 'grounded' ? 'full' : 'heightened'}?`;
-    $('#intensity-lo').textContent = terr.slider[0];
-    $('#intensity-hi').textContent = terr.slider[1];
-    $('#intensity').value = Math.round(S.t[S.active] * 100);
-    drawField();
-    const tags = g.tags.slice(0, 2).concat(g.tags.slice(-1)).filter((t, i, a) => a.indexOf(t) === i);
-    $('#insp-use').innerHTML = `
-      <div class="vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
-      <div class="tags">${tags.map(tagHtml).join('')}</div>
-      <p class="note">${g.rel.notes.join(' ')}</p>`;
-  }
-
   function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); }
 
   function pickFromPointer(ev) {
@@ -243,31 +225,96 @@
       <button class="mini" data-action="snap">Use it</button>${other ? `<button class="mini" data-action="goto" data-v="${other[0]}1" data-hex="${C.toHex(c)}">Use as ${TERRITORIES[other].label}</button>` : ''}`;
   }
 
-  /* ---------- bottom dock: counterparts ---------- */
-  function renderDock() {
-    const dock = $('#dock');
+  /* ---------- 2.5 counterparts ---------- */
+  function renderCounterparts() {
+    $('#cp-toggle').textContent = S.cpOpen ? 'Close' : 'Open';
+    $('#cp-toggle').setAttribute('aria-expanded', S.cpOpen);
+    const body = $('#cp-body');
+    body.hidden = !S.cpOpen;
+    if (!S.cpOpen) return;
     if (cur.hasG && cur.hasR) {
       const from = activeKey(), to = from === 'grounded' ? 'ripe' : 'grounded', target = to[0] + '1';
       S.recs = E.recommend(S.chips[S.active], from, 6);
-      dock.innerHTML = `<div class="dock-label">${TERRITORIES[to].label} counterparts<small>for ${cur.byId[S.active].label}</small></div>
+      body.innerHTML = `<div class="sub" style="margin-bottom:6px">${TERRITORIES[to].label} for ${cur.byId[S.active].label}</div>
         <div class="recs">${S.recs.map((r, i) => {
           const sp = E.spec(r.color), on = cur.byId[target] && cur.byId[target].hex === sp.hex;
           return `<button class="rec${on ? ' on' : ''}" data-action="rec" data-v="${i}" data-target="${target}" title="${r.reason}. Replaces ${cur.labelOf(target)}.">
             <span class="rec-sw" style="background:${sp.hex}"><i style="background:${CONFIG.evergreenHex}"></i></span>
-            <b>${sp.hex}</b><span class="rec-why">${r.reason}</span></button>`; }).join('')}</div>`;
+            <b>${sp.hex.slice(1)}</b></button>`; }).join('')}</div>`;
     } else {
       const other = cur.hasG ? 'Ripe' : 'Grounded';
-      dock.innerHTML = `<div class="dock-invite"><span>Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</span><button class="btn" data-action="mix">Add ${other}</button></div>`;
+      body.innerHTML = `<div class="cp-invite"><span>Add a ${other} counterpart to see suggestions.</span><button class="btn" data-action="mix">Add ${other}</button></div>`;
     }
   }
 
-  /* ---------- Technical view (sheet) ---------- */
+  /* ---------- stage: the colors, once ---------- */
+  function renderStage() {
+    const stack = $('#stack');
+    let first = true;
+    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
+      const el = $(`.slot[data-id=${id}]`, stack), it = cur.byId[id];
+      if (!it) { el.classList.remove('on', 'first', 'sel'); el.style.flexGrow = 0; el.tabIndex = -1; return; }
+      const isFirst = first, role = cur.roles[id]; first = false;
+      const g = guidanceFor(it);
+      el.classList.add('on'); el.classList.toggle('first', isFirst);
+      el.classList.toggle('sel', S.active === id);
+      el.classList.toggle('compact', it.area < 0.5);
+      el.classList.toggle('small', it.area < 0.6);
+      el.style.flexGrow = it.area; el.style.background = it.hex; el.style.color = inkOrWhite(it.hex); el.tabIndex = id === 'e' ? -1 : 0;
+      el.setAttribute('aria-label', `${it.label}, ${it.hex}, ${ROLE_LABEL[role.role]}`);
+      el.innerHTML = `<span class="b-role"><em>${ROLE_LABEL[role.role]}</em>${role.anchor ? '<em>Anchor</em>' : ''}</span>
+        <span class="b-label">${it.label}</span><span class="b-hex">${it.hex}</span>
+        <span class="pop" aria-hidden="true"><span class="tags">${g.tags.slice(0, 4).map(tagHtml).join('')}</span><p>${g.note}</p></span>`;
+    });
+    $('[data-empty=top]', stack).classList.toggle('on', !cur.hasR);
+    $('[data-empty=bottom]', stack).classList.toggle('on', !cur.hasG);
+  }
+
+  /* ---------- 4. apply ---------- */
+  const val = (label, text, copy, hint) => `<button class="val" data-action="copy" data-v="${copy ?? text}" title="${hint || 'Copy ' + label}"><span>${label}</span><code>${text}</code></button>`;
+
+  function crow(o) {
+    const s = o.spec, g = guidanceFor(o);
+    return `<div class="crow"><span class="crow-sw" style="background:${o.hex}"></span><div style="min-width:0">
+      <div class="crow-title"><b>${o.label}</b><span>${ROLE_LABEL[o.role]}${o.anchor ? ' · Anchor' : ''}</span></div>
+      <div class="crow-vals">${val('HEX', s.hex)}${val('RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('CMYK', s.cmyk.join(' '), `cmyk(${s.cmyk.join(', ')})`, 'Indicative CMYK; confirm with press proofs')}${val('OKLCH', `${(s.oklch.L * 100).toFixed(1)}% ${s.oklch.C.toFixed(3)} ${s.oklch.h.toFixed(0)}`, s.oklchText)}</div>
+      <div class="tags crow-tags">${tagHtml(g.tags[0])}</div></div></div>`;
+  }
+
+  function matrixHtml(order) {
+    const { whiteHex, inkHex, evergreenHex } = CONFIG;
+    const cols = [['White', whiteHex], ['Ink', inkHex], ['Evergreen', evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
+    const head = cols.map(([n, hex]) => `<div class="mx-h" title="${n} type"><i style="background:${hex}"></i></div>`).join('');
+    const rows = order.map((o) => {
+      const cells = cols.map(([n, hex]) => {
+        if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="mx same" title="Same color"></div>`;
+        const r = E.contrastLevel(hex, o.hex), [lab, , mark] = LEVEL[r.level];
+        return `<div class="mx lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${n} on ${o.label}: ${lab}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
+      }).join('');
+      return `<div class="mx-r"><i style="background:${o.hex}"></i><span>${o.label}</span></div>${cells}`;
+    }).join('');
+    return `<div class="matrix" style="grid-template-columns:84px repeat(${cols.length},minmax(0,1fr))"><div></div>${head}${rows}</div>
+      <div class="legend"><span><b>✓</b> Body text</span><span><b>L</b> Large text only</span><span><b>✕</b> Avoid</span><span>Columns: type color</span></div>`;
+  }
+
+  function renderApply() {
+    $('#apply-body').innerHTML = `
+      <div class="crows${cur.ranked.length >= 4 ? ' dense' : ''}">${cur.ranked.map(crow).join('')}</div>
+      <div class="sub">Type on color</div>
+      ${matrixHtml(cur.ranked)}
+      <div class="exports">
+        <button class="btn" data-action="copy-css">CSS variables</button>
+        <button class="btn" data-action="copy-json">JSON</button>
+        <button class="btn" data-action="lib-add">Add to library</button>
+        <button class="btn btn-primary" data-action="copy-link">Copy link</button>
+      </div>`;
+    $('#apply-body').style.cssText = 'display:flex;flex-direction:column;gap:12px';
+  }
+
+  /* ---------- sheets: Technical, About, Library ---------- */
   const bar = (label, v) => `<div class="bar"><span>${label}</span><i style="--w:${Math.round(C.clamp(v, 0, 1) * 100)}%"></i><em>${v.toFixed(2)}</em></div>`;
 
-  function renderTech() {
-    const dr = $('#drawer');
-    dr.hidden = !S.tech;
-    if (!S.tech) return;
+  function techHtml() {
     const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c })));
     const cards = cur.chipItems.map((it, i) => {
       const m = T.membership(it.c), r = ev.rels[i];
@@ -284,7 +331,7 @@
     const rowsT = cur.items.map((o) => `<tr><td>${o.label}</td>${fgList.map(([n, hex]) => {
       if (hex.toUpperCase() === o.hex.toUpperCase()) return '<td>–</td>';
       const r = E.contrastLevel(hex, o.hex); return `<td title="${n} on ${o.label}">${r.ratio.toFixed(1)} / ${Math.abs(r.lc).toFixed(0)}</td>`; }).join('')}</tr>`).join('');
-    $('#drawer-body').innerHTML = `
+    return `
       <p>Balance ${S.p.toFixed(2)} (0 = Grounded end, 1 = Ripe end) · zone ${cur.z.id} · layout ${cur.code} · ${cur.q.chips} chips${cur.q.recommended ? '' : ' (not recommended)'} · overall ${ev.score.toFixed(2)}</p>
       <section><h4>Each color against Evergreen</h4>${cards}</section>
       ${pairs.length ? `<section><h4>Grounded ↔ Ripe</h4>${pairs.join('')}</section>` : ''}
@@ -294,7 +341,45 @@
       <section><h4>Territory slice at hue ${S.chips[S.active].h.toFixed(0)}°</h4><canvas id="slice" width="360" height="300"></canvas>
         <p>Territories are irregular, hue-dependent regions (shaded boxes), not one universal L/C range. Shaded area is the sRGB gamut. Evergreen is plotted at its own chroma and lightness.</p></section>
       <p>Territory boundaries are provisional until calibrated against Sweetgreen's approved samples. CMYK values are indicative only; confirm with press proofs.</p>`;
-    drawSlice();
+  }
+
+  function aboutHtml() {
+    const dot = (hex) => `<i style="background:${hex}"></i>`;
+    return `
+      <p class="lede">A living color system that moves from Grounded to Ripe, always anchored by Evergreen.</p>
+      <p>Sweetgreen's color is built around three territories: Grounded, Evergreen, Ripe. It is inspired by the cycle of growth, but it is a spectrum of expression and energy rather than a literal “soil, plant, fruit”.</p>
+      <div class="about-territories">
+        <div class="about-t"><b>${dot(C.toHex(seed.g1))}Grounded</b><p>Rooted, substantial, calm, tempered, elemental. Earth, terrain, minerals, water, atmosphere. A grounded color can be bright; it is tempered, not muted.</p></div>
+        <div class="about-t"><b>${dot(CONFIG.evergreenHex)}Evergreen</b><p>The constant and most recognizable brand color. It anchors every expression while the colors around it change.</p></div>
+        <div class="about-t"><b>${dot(C.toHex(seed.r1))}Ripe</b><p>Vibrant, expressive, juicy, abundant, full. Fruit, flowers, crops, blooms. Ripe is heightened, not simply saturated.</p></div>
+      </div>
+      <p><b style="color:var(--ink)">Grounded isn't muted. It's tempered. Ripe isn't simply saturated. It's heightened.</b></p>
+      <p>There is no fixed secondary palette. Grounded and Ripe are territories: controlled but flexible areas of color from which colors are chosen for seasons, ingredients and collaborations. Choose the expression, select within the territory, anchor with Evergreen, and balance Grounded and Ripe as needed.</p>
+      <p>This tool keeps the front end intuitive while a technical engine checks territory, the relationship to Evergreen, pairings, hierarchy and legibility behind the scenes. Open <b style="color:var(--ink)">Technical</b> to see the numbers.</p>
+      <p>Territory boundaries are provisional until calibrated against approved Sweetgreen samples.</p>`;
+  }
+
+  function libraryHtml() {
+    const list = loadLib();
+    if (!list.length) return `<div class="lib-empty"><p>Nothing saved yet. Use <b style="color:var(--ink)">Add to library</b> in Apply to keep a combination.</p></div><p>Saved combinations stay in this browser only.</p>`;
+    return list.map((it) => {
+      const ids = SP.ids(it.code), hexes = [...ids.filter((x) => x[0] === 'g'), 'e', ...ids.filter((x) => x[0] === 'r')].map((id) => (id === 'e' ? CONFIG.evergreenHex : '#' + String(it.hex[id]).replace('#', '')));
+      const lead = SP.ZONES[SP.zoneIndex(it.p)].lead;
+      return `<div class="lib-item"><span class="lib-sw">${hexes.map((h) => `<i style="background:${h}"></i>`).join('')}</span>
+        <div class="lib-meta"><b>${SP.label(it.code)}</b><span>${new Date(it.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}${lead ? ' · ' + (lead === 'grounded' ? 'Grounded-led' : 'Ripe-led') : ''}</span></div>
+        <div class="lib-actions"><button class="mini" data-action="lib-open" data-v="${it.id}">Open</button><button class="mini" data-action="lib-del" data-v="${it.id}" aria-label="Delete">Delete</button></div></div>`;
+    }).join('') + '<p>Saved combinations stay in this browser only.</p>';
+  }
+
+  function renderSheet() {
+    const dr = $('#drawer');
+    dr.hidden = !S.sheet;
+    dr.style.top = Math.round($('.top').getBoundingClientRect().bottom + 8) + 'px'; // keep the top bar and its menu reachable
+    $$('.nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.sheet));
+    if (!S.sheet) return;
+    $('#drawer-title').textContent = { about: 'About', library: 'Library', technical: 'Under the hood' }[S.sheet];
+    $('#drawer-body').innerHTML = S.sheet === 'technical' ? techHtml() : S.sheet === 'about' ? aboutHtml() : libraryHtml();
+    if (S.sheet === 'technical') drawSlice();
   }
 
   function drawSlice() {
@@ -350,14 +435,14 @@
     document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed'); } ta.remove();
   }
   let toastTimer;
-  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600); }
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1700); }
 
   /* ---------- render orchestration ---------- */
   let raf = 0;
   function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; fullRender(); }); }
   function fullRender() {
     snapshot();
-    renderLeft(); renderStage(); renderInspector(); renderDock(); renderTech(); writeHash();
+    renderExpression(); renderExplore(); renderCounterparts(); renderStage(); renderApply(); renderSheet(); writeHash();
   }
 
   /* ---------- events ---------- */
@@ -367,17 +452,21 @@
     const a = b.dataset.action, v = b.dataset.v || b.dataset.id;
     if (a === 'layout') { S.picks[cur.z.id] = +v; fullRender(); }
     else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } S.active = v; fullRender(); }
-    else if (a === 'view') { S.view = v; fullRender(); }
+    else if (a === 'sheet') { S.sheet = S.sheet === v ? null : v; renderSheet(); }
+    else if (a === 'close-sheet') { S.sheet = null; renderSheet(); }
+    else if (a === 'cp-toggle') { S.cpOpen = !S.cpOpen; renderCounterparts(); }
     else if (a === 'mix') { S.p = 0.5; fullRender(); }
     else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
     else if (a === 'copy') copy(v);
     else if (a === 'copy-css') copy(exportCss(), 'CSS variables copied');
     else if (a === 'copy-json') copy(JSON.stringify(exportData(), null, 2), 'JSON copied');
     else if (a === 'copy-link') { writeHash(); copy(location.href, 'Link copied'); }
+    else if (a === 'lib-add') addToLibrary();
+    else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex }); S.sheet = null; fullRender(); toast('Opened from library'); } }
+    else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderSheet(); }
     else if (a === 'test-hex') testHex();
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); $('#test-msg').textContent = 'Applied the nearest approved color.'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); $('#test-msg').textContent = ''; fullRender(); }
-    else if (a === 'close-tech') { S.tech = false; $('#tech-toggle').checked = false; fullRender(); }
   });
 
   $('#balance').addEventListener('input', (e) => { S.p = e.target.value / 1000; schedule(); });
@@ -400,11 +489,10 @@
     S.t[S.active] = e.target.value / 100; S.chips[S.active] = T.colorAt(key, c.h, c.L, S.t[S.active]); schedule();
   });
   $('#hex-test').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
-  $('#tech-toggle').addEventListener('change', (e) => { S.tech = e.target.checked; fullRender(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tech) { S.tech = false; $('#tech-toggle').checked = false; fullRender(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.sheet) { S.sheet = null; renderSheet(); } });
 
   /* ---------- init ---------- */
   readHash();
   fullRender();
-  window.SGApp = { state: S, snapshot: () => cur, exportData };
+  window.SGApp = { state: S, snapshot: () => cur, exportData, loadLib };
 })();
