@@ -15,3 +15,6 @@ Without them the display type falls back to Helvetica Neue / Arial.
 Before launch, license GT America (web) and replace the trial files; then update the `@font-face` URLs in `css/style.css` if the file names differ.
 
 Trial limits seen in the supplied files: no upright Regular or Light, and no glyphs for `# : ; / ( ) + · % ° ≈ ← → ↑ ↓ ✓ ✕`. Those characters fall back to the next font in the stack.
+
+## v5 (Figma design)
+v5 uses **GT America Standard Regular** (`GTAmerica-Standard-Regular-Trial.otf`) for all panel text and buttons, and **Compressed Bold** (plus Bold Italic for the tilted selected block) for color names, "Aa" and step numbers. Files needed in this folder: `GTAmerica-Standard-Regular-Trial.otf`, `GTAmerica-Compressed-Bold-Trial.otf`, `GTAmerica-Compressed-Bold-Italic-Trial.otf`. They remain gitignored; without them the UI falls back to Helvetica / Arial.

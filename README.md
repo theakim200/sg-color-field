@@ -9,21 +9,22 @@ A tool for exploring new color without leaving the Sweetgreen world.
 Static site, no build step. Open `index.html`, or `python3 -m http.server 8080`.
 Tests: `node tests/engine.test.js`
 
-## Layout
-One screen, no scrolling, three columns:
-- **Left**: 1 Choose an expression (balance handlebar G to R, layouts), 2 Explore color (chip tabs, color field, intensity, HEX check, how the combination reads), 2.5 Explore counterparts (opens and closes).
-- **Center stage**: the colors, once and large. Each block shows its role (Dominant / Supporting / Accent, Anchor for Evergreen). Hover or focus a block for its usage guidance. Click a block to edit it.
-- **Right**: 4 Apply: copyable values (HEX, RGB, CMYK, OKLCH) with usage tags, a Type-on-color matrix, and CSS variables / JSON / Add to library / Copy link.
-- **Top bar**: About, Library (combinations saved in this browser), Technical (OKLCH values, scores, contrast numbers; Esc closes any sheet).
+## Layout (v5, from the Figma design)
+A fixed **1440 × 810 artboard** scaled to fit the window (no scrolling). The colors sit once at the center; one panel at a time on the right.
+- **Intro**: `sg` monogram, `s` and `g` travel to the edges while photos stack, then the color blocks and the panel arrive. Click to skip; skipped for shared links and `prefers-reduced-motion` (or `?intro=0`).
+- **Stage**: Ripe / Evergreen / Grounded blocks (radius 46.773). Height follows the balance (rescaled so a balanced color is as large as Evergreen, as drawn). The selected color tilts into a skewed pose with italic type in steps 2 and 3 (pose fitted to the Figma frame). The stage re-centers over the free area and the `g` mark follows the panel edge.
+- **Panel steps**: 1 Choose an expression (balance slider G to R, layouts) · 2 Explore color (tabs, color field, intensity, HEX check, how it reads, **name this color**, Add Ripe/Grounded) · 3 Explore counterparts (tabs, 3 × 2 suggestions, reset selection) · 4 Apply (HEX / CMYK / RGB / OKLCH, type-on-color matrix, Copy link / JSON / CSS variable, Add to Library / Open Library).
+- **`?`** opens About beside the panel; **Library** replaces the panel (hover a palette for ✕ delete / ↗ open). Esc closes both.
+- **Color names** are an addition that is not in the Figma design: a name field in step 2. Names show on the stage, in tabs, in Apply, in exports and as the Library label.
+- The Technical view of v4 is not in the design and is not in the UI; the numbers remain in the engine and in the v4 archive.
 
-Heights from about 780px fit everything; on shorter screens secondary detail is dropped and, in the rarest case (3 colors with counterparts open below ~770px), the left column scrolls inside itself. Below ~1040px wide the columns stack and the page scrolls.
+All motion durations and easings live in `js/motion.js`. They are **placeholders estimated from the start and end frames**, not values from the prototype.
 
-Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v3 central stage), each a single self-contained HTML plus a commit hash.
+Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v3 central stage, v4 merged layout), each a single self-contained HTML plus a commit hash.
 
 ## Look
-iOS tone: grouped gray background, white cards with soft shadows instead of strokes, large radii, segmented controls, white round slider handles, a translucent header and an Evergreen toggle.
-Palette: Evergreen (`#00A810`), white, black, and iOS system grays. Status is carried by form, not hue (good = Evergreen tint, caution = gray fill, avoid = solid black). Color swatches and the color field are the only other colors on screen, because they are the content.
-Type: GT America Compressed (Bold) for display (titles, color names, big numerals) and the system sans (SF on Apple devices) for body and data, because the supplied trial has no lighter upright weight. Tokens `--font-display` / `--font-text` in `css/style.css`; see `fonts/README.md`.
+From the design: white page, `#eee` panel (radius 23), black/gray buttons (radius 13), `#c1c1c1` inactive steps, `#767676` secondary text. Letter-spacing is normalized to -3% (the design mixes 3.3% and 4%). Evergreen is `#00A810`.
+Type: GT America Standard Regular for text, GT America Compressed Bold for color names, "Aa" and step numbers. See `fonts/README.md` (trial files stay out of git).
 
 ## Architecture
 | File | Role |
@@ -32,7 +33,8 @@ Type: GT America Compressed (Bold) for display (titles, color names, big numeral
 | `js/territories.js` | Grounded / Ripe as **hue-dependent regions** (keypoint table every 30°, interpolated), membership + depth, `colorAt`, `snapInto`. Brand constants in `CONFIG` |
 | `js/spectrum.js` | The Ripe↔Grounded balance: which chip combinations are allowed in each zone, the 3-chip cap, and the visual area of each chip |
 | `js/engine.js` | Evergreen relationship, Grounded↔Ripe compatibility, counterpart recommendation, contrast levels, brand-use guidance tags, Dominant/Supporting/Accent hierarchy, production values. All thresholds in `PARAMS` |
-| `js/app.js` | UI: left cards, stage, Apply card, sheets and library. Translates engine output into brand language; numbers appear only under **Technical view** |
+| `js/motion.js` | Intro timeline and every duration / easing (placeholders) |
+| `js/app.js` | UI: stepper panel, stage, About, Library. Translates engine output into brand language |
 
 ## How the spec maps to code
 - Territory membership → `territories.membership` (core / edge / outside)

@@ -13,3 +13,7 @@ Restore the source of this version with `git checkout a20de7f`.
 ## v3: central stage with surrounding tools (commit `e384a4e`)
 `sweetgreen-color-field-v3-stage.html`: the colors once on a central stage (each block carries its role and usable type colors, plus a Blocks / Composition view), a left expression panel, a right selected-color panel, a counterpart dock and a top bar. Single self-contained file, GT America not embedded.
 Restore the source with `git checkout e384a4e`.
+
+## v4: merged layout (commit `62868ec`)
+`sweetgreen-color-field-v4-merged.html`: left cards (1 expression, 2 explore, 2.5 counterparts), the colors once at the center, Apply on the right, plus About / Library / Technical sheets. Single self-contained file, GT America not embedded.
+Restore the source with `git checkout 62868ec`.
