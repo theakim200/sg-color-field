@@ -34,7 +34,7 @@
 
   const S = {
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
-    chips: { ...seed }, pname: '',
+    chips: { ...seed }, pname: '', picked: { g1: false, g2: false, r1: false, r2: false },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
     recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
@@ -54,15 +54,18 @@
     const mk = (id) => {
       if (id === 'e') { const spec = E.spec(T.evergreen); return { id, key: 'evergreen', hex: spec.hex, c: spec.oklch, spec, area: 1, label: 'Evergreen' }; }
       const spec = E.spec(S.chips[id]);
-      return { id, key: terrOf(id), hex: spec.hex, c: spec.oklch, spec, area: area[id], label: labelOf(id) };
+      return { id, key: terrOf(id), hex: spec.hex, c: spec.oklch, spec, area: area[id], label: labelOf(id), picked: !!S.picked[id] };
     };
     const order = STAGE_ORDER.filter((id) => id === 'e' || ids.includes(id));
     const items = order.map(mk), byId = Object.fromEntries(items.map((i) => [i.id, i]));
     const ranked = E.hierarchy(items), roles = Object.fromEntries(ranked.map((o) => [o.id, o]));
-    cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: items.filter((i) => i.id !== 'e'), hasG: q.g > 0, hasR: q.r > 0, labelOf };
+    cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: items.filter((i) => i.id !== 'e'), pickedChips: items.filter((i) => i.id !== 'e' && i.picked), hasG: q.g > 0, hasR: q.r > 0, labelOf };
     if (!ids.includes(S.active)) S.active = ids.includes('r1') ? 'r1' : 'g1';
   }
   const activeKey = () => terrOf(S.active);
+  const pickedOnly = (o) => o.id === 'e' || o.picked;
+  const markPicked = (id) => { S.picked[id] = true; };
+  const DOT_BLANK = '#d4d4d8';
   const labelColor = (hex) => (C.wcag('#000000', hex) < 3 ? '#fff' : '#000');
   const terrName = (k) => TERRITORIES[k].label;
 
@@ -72,9 +75,10 @@
     const q = new URLSearchParams({ v: '2', p: S.p.toFixed(3), c: cur.code, pk: JSON.stringify(S.picks) });
     CHIP_IDS.forEach((id) => q.set(id, E.spec(S.chips[id]).hex.slice(1)));
     if (S.pname) q.set('nm', S.pname);
+    q.set('ch', CHIP_IDS.filter((id) => S.picked[id]).join(','));
     history.replaceState(null, '', '#' + q.toString());
   }
-  function applyState({ p, picks, hex, name }) {
+  function applyState({ p, picks, hex, name, picked }) {
     if (typeof p === 'number' && p >= 0 && p <= 1) S.p = p;
     S.picks = {};
     for (const z of SP.ZONES) if (picks && Number.isInteger(picks[z.id]) && picks[z.id] >= 0 && picks[z.id] < z.combos.length) S.picks[z.id] = picks[z.id];
@@ -86,14 +90,16 @@
       S.t[id] = T.intensityOf(k, S.chips[id]);
     }
     S.pname = typeof name === 'string' ? name.trim().slice(0, 28) : '';
+    for (const id of CHIP_IDS) S.picked[id] = Array.isArray(picked) ? picked.includes(id) : true; // links and saved palettes from before this state: all colors were set
   }
   function readHash() {
+    if (!location.hash.slice(1)) return false; // a fresh visit: nothing chosen yet
     const q = new URLSearchParams(location.hash.slice(1));
     const hex = Object.fromEntries(CHIP_IDS.map((id) => [id, q.get(id)]));
     if (q.get('v') !== '2') { applyState({ hex }); return false; }
     let picks = {};
     try { picks = JSON.parse(q.get('pk') || '{}') || {}; } catch (e) { /* ignore */ }
-    applyState({ p: parseFloat(q.get('p')), picks, hex, name: q.get('nm') || '' });
+    applyState({ p: parseFloat(q.get('p')), picks, hex, name: q.get('nm') || '', picked: q.has('ch') ? q.get('ch').split(',').filter(Boolean) : null });
     return true;
   }
 
@@ -109,9 +115,10 @@
   }
   const libName = (it) => it.name || SP.label(it.code).replace(' + Evergreen', '');
   function addToLibrary() {
+    if (!CHIP_IDS.some((id) => S.picked[id])) { toast('Pick a color in Explore color first'); return; }
     const list = loadLib();
     const hex = Object.fromEntries(CHIP_IDS.map((id) => [id, E.spec(S.chips[id]).hex]));
-    list.unshift({ id: Date.now().toString(36), savedAt: Date.now(), p: +S.p.toFixed(3), picks: { ...S.picks }, code: cur.code, hex, name: S.pname });
+    list.unshift({ id: Date.now().toString(36), savedAt: Date.now(), p: +S.p.toFixed(3), picks: { ...S.picks }, code: cur.code, hex, name: S.pname, picked: CHIP_IDS.filter((id) => S.picked[id]) });
     S.pname = '';
     const ok = saveLib(list.slice(0, 60));
     setView('library');
@@ -119,7 +126,7 @@
   }
   function thumbHtml(it) {
     const ids = SP.ids(it.code), hx = (id) => '#' + String(it.hex[id]).replace('#', '');
-    const chips = ['r1', 'r2', 'g1', 'g2'].filter((id) => ids.includes(id)).map(hx), ev = CONFIG.evergreenHex;
+    const chips = ['r1', 'r2', 'g1', 'g2'].filter((id) => ids.includes(id) && (!it.picked || it.picked.includes(id))).map(hx), ev = CONFIG.evergreenHex;
     const cell = (c, style) => `<i style="background:${c};${style}"></i>`;
     if (chips.length <= 1) return cell(ev, 'grid-row:1/3') + cell(chips[0] || ev, 'grid-row:1/3');
     if (chips.length === 2) return cell(ev, 'grid-row:1/3') + cell(chips[0], '') + cell(chips[1], '');
@@ -153,17 +160,21 @@
       if (!it) { b.classList.add('gone'); b.style.height = '0px'; b.style.top = (id[0] === 'r' ? 0 : STAGE_H) + 'px'; b.classList.remove('sel'); return; }
       const h = (STAGE_H * raw[id]) / sum;
       b.classList.remove('gone'); b.style.top = y + 'px'; b.style.height = h + 'px'; y += h;
-      b.style.backgroundColor = it.hex; b.style.color = labelColor(it.hex);
+      const blank = id !== 'e' && !it.picked;
+      b.classList.toggle('blank', blank);
+      b.style.backgroundColor = blank ? '' : it.hex; b.style.color = blank ? '' : labelColor(it.hex);
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);
-      b.setAttribute('aria-label', `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
+      b.setAttribute('aria-label', blank ? `${it.label}, not chosen yet` : `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
       b.firstChild.textContent = it.label;
     });
     kickTilt();
   }
 
-  /* ---------- the selected block faces the mouse ----------
-     Pose = how far the mouse is from the block's center (nx horizontal, ny vertical, -1..1). nx = 1 (mouse to the left of the block, or no mouse yet)
-     is the pose drawn in the design (top edge leaning right); the mouse on the other side mirrors it. */
+  /* ---------- color blocks in 3D ----------
+     Every block tilts toward the pointer while it is hovered (like a card under light): it turns to face the pointer,
+     lifts toward the viewer, throws a shadow away from the tilt and catches a soft highlight where the pointer is.
+     The selected block (steps 2 and 3) keeps facing the pointer wherever it is on the screen.
+     Numbers are in M.tilt (js/motion.js). */
   const mouse = { x: null, y: null }, pose = {};
   let tiltRaf = 0;
   const kickTilt = () => { if (!tiltRaf) tiltRaf = requestAnimationFrame(tickTilt); };
@@ -172,20 +183,35 @@
     const K = M.tilt, st = $('#stage').getBoundingClientRect(), calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let busy = false;
     STAGE_ORDER.forEach((id) => {
-      const b = blocks[id], on = b.classList.contains('sel'), p = pose[id] || (pose[id] = { nx: 1, ny: 0, amt: 0 });
-      const cx = st.left + st.width / 2, cy = st.top + b.offsetTop + b.offsetHeight / 2;
-      const tx = mouse.x === null ? 1 : C.clamp((cx - mouse.x) / K.reachX, -1, 1), ty = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1), ta = on ? 1 : 0;
-      const f = calm ? 1 : K.follow, e = calm ? 1 : K.enter;
-      const d = Math.abs(tx - p.nx) + Math.abs(ty - p.ny) + Math.abs(ta - p.amt);
-      p.nx += (tx - p.nx) * f; p.ny += (ty - p.ny) * f; p.amt += (ta - p.amt) * e;
-      if (d > 0.002) busy = true;
-      if (!on && p.amt < 0.003) { p.amt = 0; b.style.transform = ''; return; }
-      const a = p.amt;
-      b.style.transform = `translate(${(K.shift * p.nx * a).toFixed(2)}px, ${((K.shift / 2) * (p.ny + Math.abs(p.nx)) * a).toFixed(2)}px) rotate(${(-K.rotate * p.nx * a).toFixed(3)}deg) skewX(${(-K.skew * p.nx * a).toFixed(3)}deg) skewY(${(K.skewY * p.ny * a).toFixed(3)}deg) scale(${(1 - 0.004 * a).toFixed(4)}, ${(1 - 0.028 * a).toFixed(4)})`;
+      const b = blocks[id], sel = b.classList.contains('sel'), gone = b.classList.contains('gone');
+      const p = pose[id] || (pose[id] = { rx: 0, ry: 0, lift: 0, sel: 0, gx: 50, gy: 50 });
+      const w = st.width, h = b.offsetHeight, left = st.left, top = st.top + b.offsetTop, cx = left + w / 2, cy = top + h / 2;
+      const over = !gone && mouse.x !== null && mouse.x >= left && mouse.x <= left + w && mouse.y >= top && mouse.y <= top + h;
+      let trx = 0, try_ = 0, tl = 0, gx = p.gx, gy = p.gy;
+      if (over) { // local: the point under the pointer
+        const nx = (mouse.x - left) / w, ny = (mouse.y - top) / h;
+        try_ = (nx - 0.5) * 2 * K.ry; trx = -(ny - 0.5) * 2 * K.rx; tl = 1; gx = nx * 100; gy = ny * 100;
+      } else if (sel) { // global: face the pointer wherever it is
+        const nx = mouse.x === null ? 0.5 : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ny = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1);
+        try_ = nx * K.ry; trx = -ny * K.rx; gx = 50 + nx * 40; gy = 50 + ny * 40;
+      }
+      const ts = sel ? 1 : 0, f = calm ? 1 : K.follow, e = calm ? 1 : K.enter;
+      const d = Math.abs(trx - p.rx) + Math.abs(try_ - p.ry) + Math.abs(tl - p.lift) + Math.abs(ts - p.sel);
+      p.rx += (trx - p.rx) * f; p.ry += (try_ - p.ry) * f; p.lift += (tl - p.lift) * e; p.sel += (ts - p.sel) * e; p.gx += (gx - p.gx) * f; p.gy += (gy - p.gy) * f;
+      if (d > 0.01) busy = true;
+      const strength = Math.max(p.lift, p.sel);
+      if (strength < 0.004 && d <= 0.01) { b.style.transform = ''; b.style.boxShadow = ''; b.style.setProperty('--ga', 0); p.rx = p.ry = p.lift = p.sel = 0; return; }
+      const sc = 1 + K.scale * p.lift + K.scale * 0.3 * p.sel;
+      b.style.transform = `perspective(${K.perspective}px) rotateX(${p.rx.toFixed(3)}deg) rotateY(${p.ry.toFixed(3)}deg) translateZ(${(K.lift * p.lift).toFixed(2)}px) scale(${sc.toFixed(4)})`;
+      const S_ = K.shadow, sx = (-p.ry / K.ry) * S_.x, sy = S_.y + (p.rx / K.rx) * S_.x * 0.6, a = S_.alpha * strength;
+      b.style.boxShadow = `${sx.toFixed(1)}px ${sy.toFixed(1)}px ${(S_.blur * strength).toFixed(1)}px rgba(0,0,0,${a.toFixed(3)}), 0 2px ${(8 * strength).toFixed(1)}px rgba(0,0,0,${(a * 0.5).toFixed(3)})`;
+      b.style.setProperty('--gx', p.gx.toFixed(1) + '%'); b.style.setProperty('--gy', p.gy.toFixed(1) + '%'); b.style.setProperty('--ga', (K.glare * strength).toFixed(3));
+      b.style.zIndex = p.lift > 0.05 ? 4 : sel ? 3 : '';
     });
     if (busy) kickTilt();
   }
   addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; kickTilt(); });
+  document.documentElement.addEventListener('mouseleave', () => { mouse.x = mouse.y = null; kickTilt(); });
   addEventListener('resize', kickTilt);
 
   /* ---------- sliders ---------- */
@@ -251,7 +277,7 @@
     if (S.step === 1) ui.bal = makeSlider($('#bal'), 2, (v) => { S.p = v; schedule(); }, 'Balance between Grounded and Ripe');
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
-        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); S.testMsg = ''; schedule();
+        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; schedule();
       }, 'Intensity');
       const fb = $('#fieldbox'); let drag = false;
       fb.addEventListener('pointerdown', (e) => { drag = true; fb.setPointerCapture(e.pointerId); pickFromPointer(e); });
@@ -261,14 +287,14 @@
         const c = S.chips[S.active], st = e.shiftKey ? 10 : 2;
         const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, 0.01], ArrowDown: [0, -0.01] }[e.key];
         if (!mv) return; e.preventDefault();
-        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); S.testMsg = ''; schedule();
+        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
     }
   }
 
   function tabsHtml(list) {
-    return list.map((it) => `<button class="tab${S.active === it.id ? ' on' : ''}" role="tab" aria-selected="${S.active === it.id}" data-action="chip" data-v="${it.id}"><i style="background:${it.hex}"></i>${esc(it.label)}</button>`).join('');
+    return list.map((it) => `<button class="tab${S.active === it.id ? ' on' : ''}" role="tab" aria-selected="${S.active === it.id}" data-action="chip" data-v="${it.id}"><i style="background:${it.picked ? it.hex : DOT_BLANK}"></i>${esc(it.label)}</button>`).join('');
   }
   // The white highlight is one persistent element that slides to the selected item; only the items are rebuilt.
   function slidePill(box, items, selector) {
@@ -292,7 +318,7 @@
     const order = cur.z.combos.map((code, i) => i).sort((x, y) => SP.parse(cur.z.combos[x]).chips - SP.parse(cur.z.combos[y]).chips); // fewer colors on top
     slidePill($('#opts'), '.opt', '.opt.on')(order.map((i) => {
       const code = cur.z.combos[i], q = SP.parse(code), ids = SP.ids(code);
-      const dots = [...ids.filter((x) => x[0] === 'g'), 'e', ...ids.filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
+      const dots = [...ids.filter((x) => x[0] === 'g'), 'e', ...ids.filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : S.picked[id] ? C.toHex(S.chips[id]) : DOT_BLANK}"></i>`).join('');
       const lead = cur.z.lead ? (cur.z.lead === 'grounded' ? 'Grounded-led' : 'Ripe-led') : 'Balanced';
       return `<button class="opt${i === cur.pick ? ' on' : ''}" data-action="layout" data-v="${i}" role="radio" aria-checked="${i === cur.pick}">
         <small>${lead}</small><span class="dots">${dots}</span><b>${SP.label(code)}</b>${q.recommended ? '' : '<span class="nr">Not recommended</span>'}</button>`;
@@ -307,8 +333,12 @@
     ui.int.set(S.t[S.active]);
     drawField();
 
-    const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
-    $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+    if (!S.picked[S.active]) {
+      $('#res').innerHTML = S.testMsg || `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
+    } else {
+      const ev = E.evaluate(cur.pickedChips.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
+      $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+    }
   }
 
   function buildField(key, t) {
@@ -338,16 +368,16 @@
     const cv = $('#field'), ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(S.fieldBitmap, 0, 0);
     const c = S.chips[S.active], { Ltop, Lbot } = FIELD, m = $('#mkr'), ev = $('#ev-mkr');
-    m.style.left = (c.h / 360) * 100 + '%'; m.style.top = ((Ltop - c.L) / (Ltop - Lbot)) * 100 + '%'; m.style.background = C.toHex(c);
+    m.style.display = S.picked[S.active] ? '' : 'none'; m.style.left = (c.h / 360) * 100 + '%'; m.style.top = ((Ltop - c.L) / (Ltop - Lbot)) * 100 + '%'; m.style.background = C.toHex(c);
     ev.style.left = (T.evergreen.h / 360) * 100 + '%'; ev.style.top = ((Ltop - T.evergreen.L) / (Ltop - Lbot)) * 100 + '%'; ev.style.background = CONFIG.evergreenHex;
   }
   function pickFromPointer(e) {
     const r = $('#field').getBoundingClientRect(), { Ltop, Lbot } = FIELD;
     const h = C.clamp((e.clientX - r.left) / r.width, 0, 0.9999) * 360;
     const L = Ltop - C.clamp((e.clientY - r.top) / r.height, 0, 1) * (Ltop - Lbot);
-    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); S.testMsg = ''; schedule();
+    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
   }
-  function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); }
+  function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); markPicked(id); }
 
   function testHex() {
     const c = C.fromHex($('#hex').value), key = activeKey(), id = S.active;
@@ -367,7 +397,9 @@
     const from = activeKey(), to = from === 'grounded' ? 'ripe' : 'grounded', target = to[0] + '1';
     $('#sub').textContent = cur.hasG && cur.hasR ? `${terrName(to)} counterparts for your ${cur.byId[S.active].label}` : 'Add a counterpart to see suggestions';
     renderTabs();
-    if (cur.hasG && cur.hasR) {
+    if (cur.hasG && cur.hasR && !S.picked[S.active]) {
+      $('#cp').innerHTML = `<p class="invite">Choose your ${cur.byId[S.active].label} in Explore color first, then we'll suggest ${terrName(to)} counterparts that work with it and Evergreen.</p><button class="lnk" data-action="step" data-v="2" style="margin-top:8px">Back to Explore color</button>`;
+    } else if (cur.hasG && cur.hasR) {
       S.recs = E.recommend(S.chips[S.active], from, 6);
       $('#cp').innerHTML = `<div class="grid3">${S.recs.map((r, i) => {
         const sp = E.spec(r.color), on = cur.byId[target] && cur.byId[target].hex === sp.hex;
@@ -381,26 +413,27 @@
 
   const val = (cls, label, text, copy) => `<button class="val ${cls}" data-action="copy" data-v="${esc(copy ?? text)}" title="Copy ${label}"><span>${label}</span><code>${text}</code></button>`;
   function renderStep4() {
-    const order = ['e', 'r1', 'r2', 'g1', 'g2'].filter((id) => cur.byId[id]).map((id) => ({ ...cur.byId[id], ...cur.roles[id] }));
+    const order = ['e', 'r1', 'r2', 'g1', 'g2'].filter((id) => cur.byId[id] && pickedOnly(cur.byId[id])).map((id) => ({ ...cur.byId[id], ...cur.roles[id] }));
+    const left = cur.chipItems.filter((i) => !i.picked).map((i) => i.label);
     const dense = order.length >= 5;
     const rows = order.map((o) => {
       const s = o.spec, role = o.id === 'e' ? 'Anchor' : ROLE_LABEL[o.role] + (o.label === terrName(o.key) ? '' : ' · ' + terrName(o.key));
       return `<div class="crow"><span class="sw" style="background:${o.hex}"></span><div><div class="nm">${esc(o.label)}<span>${role}</span></div>
         <div class="vals">${val('', 'HEX', s.hex)}${val('cm', 'CMYK', s.cmyk.join('/'), `cmyk(${s.cmyk.join(', ')})`)}${val('', 'RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('', 'OKLCH', `${(s.oklch.L * 100).toFixed(1)}%/${s.oklch.C.toFixed(3)}/${s.oklch.h.toFixed(0)}`, s.oklchText)}</div></div></div>`;
     }).join('');
-    const cols = [['White', CONFIG.whiteHex], ['Ink', CONFIG.inkHex], ['Evergreen', CONFIG.evergreenHex], ...cur.chipItems.map((c) => [c.label, c.hex])];
+    const cols = [['White', CONFIG.whiteHex], ['Ink', CONFIG.inkHex], ['Evergreen', CONFIG.evergreenHex], ...cur.pickedChips.map((c) => [c.label, c.hex])];
     const head = cols.map(([n, hex]) => `<div class="h" title="${esc(n)} type"><i style="background:${hex}"></i></div>`).join('');
     const cells = order.map((o) => cols.map(([n, hex]) => {
-      if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="c" style="background:${o.hex}" title="Same color"></div>`;
+      if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="c same" title="Same color"></div>`;
       const r = E.contrastLevel(hex, o.hex), mark = r.level === 'body' ? ICON.check : r.level === 'large' ? 'L' : ICON.cross;
-      return `<div class="c" style="background:${o.hex};color:${hex}" title="${esc(n)} on ${esc(o.label)}: ${LEVEL[r.level][0]}"><span>Aa</span><span class="m">${mark}</span></div>`;
+      return `<div class="c lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${esc(n)} on ${esc(o.label)}: ${LEVEL[r.level][0]}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
     }).join('')).join('');
     $('#apply').className = dense ? 'dense' : '';
     $('#apply').innerHTML = hd('Apply', 'How to use these colors') + `
       <div class="abs stack4" style="top:74px">
         <div class="rows4" style="gap:${dense ? 8 : 14}px">${rows}</div>
         <div class="mxwrap"><div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
-          <div class="legend" style="margin-top:11px"><span>${ICON.check} Body text</span><span><b style="font-weight:400">L</b> Large text only</span><span>${ICON.cross} Avoid</span><br>Columns: type color</div></div>
+          <div class="legend" style="margin-top:11px"><span>${ICON.check} Body text</span><span><b style="font-weight:400">L</b> Large text only</span><span>${ICON.cross} Avoid</span><br>Columns: type color</div>${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}</div>
       </div>
       <div class="abs bot">
         <div class="sh"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
@@ -441,10 +474,10 @@
 
   /* ---------- exports ---------- */
   function exportData() {
-    const extras = cur.chipItems.map((e) => [e.label, e.hex]);
+    const extras = cur.pickedChips.map((e) => [e.label, e.hex]);
     return {
       name: S.pname || undefined, balance: +S.p.toFixed(3), layout: cur.code, chips: cur.q.chips, recommended: cur.q.recommended,
-      colors: cur.ranked.map((o) => {
+      colors: cur.ranked.filter(pickedOnly).map((o) => {
         const g = E.guidance(o.hex, o.c);
         return { name: o.label, territory: o.key, role: o.role, anchor: o.anchor, hex: o.hex, rgb: o.spec.rgb, cmykApprox: o.spec.cmyk, oklch: o.spec.oklchText,
           guidance: g.tags.map((t) => t.text),
@@ -481,7 +514,7 @@
     writeHash();
   }
   function goStep(n) {
-    if (n === 3 && S.step !== 3) S.cpBackup = { chips: { ...S.chips }, t: { ...S.t } };
+    if (n === 3 && S.step !== 3) S.cpBackup = { chips: { ...S.chips }, t: { ...S.t }, picked: { ...S.picked } };
     S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; fullRender();
   }
   function restart() {
@@ -490,7 +523,7 @@
   function resetAll() {
     S.p = 0.5; S.picks = {}; S.chips = { ...seed }; S.pname = '';
     for (const id of CHIP_IDS) S.t[id] = T.intensityOf(terrOf(id), seed[id]);
-    S.active = 'r1'; goStep(1);
+    S.active = 'r1'; for (const id of CHIP_IDS) S.picked[id] = false; goStep(1);
   }
 
   document.addEventListener('click', (e) => {
@@ -508,14 +541,14 @@
     else if (a === 'close-sheet') setView('main');
     else if (a === 'mix') { S.p = 0.5; S.testMsg = ''; fullRender(); }
     else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
-    else if (a === 'reset-sel' && S.cpBackup) { Object.assign(S.chips, S.cpBackup.chips); Object.assign(S.t, S.cpBackup.t); fullRender(); }
+    else if (a === 'reset-sel' && S.cpBackup) { Object.assign(S.chips, S.cpBackup.chips); Object.assign(S.t, S.cpBackup.t); Object.assign(S.picked, S.cpBackup.picked); fullRender(); }
     else if (a === 'copy') copy(v);
     else if (a === 'copy-css') copy(exportCss(), 'CSS variables copied');
     else if (a === 'copy-json') copy(JSON.stringify(exportData(), null, 2), 'JSON copied');
     else if (a === 'copy-link') { writeHash(); copy(location.href, 'Link copied'); }
     else if (a === 'lib-add') addToLibrary();
     else if (a === 'lib-show') setView('library');
-    else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, name: it.name }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
+    else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, name: it.name, picked: it.picked }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
     else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderLibrary(); }
     else if (a === 'test-hex') testHex();
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }

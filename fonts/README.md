@@ -21,5 +21,5 @@ v5 uses **GT America Standard Regular** (`GTAmerica-Standard-Regular-Trial.otf`)
 
 **Glyph coverage (checked).** All three trial files are genuine GT America (names read from the font files: "GT America Trial Rg", "Cm Bd", "Cm Bd It"). They have no glyphs for `# : / % + ( ) ? & ' ’ “ ” — · ° ≈ ← → ✓ ✕`. In the UI those characters (for example the `#` in HEX values, `/` and `%` in OKLCH, the `?` placeholder text) fall back to Helvetica Neue / Arial. The `?` button and the check / cross marks are drawn as SVG. The licensed fonts will cover them.
 
-## v5 update: Condensed, not Compressed
-The design's `Cn_Bd` is **Condensed Bold**; the earlier files were Compressed, which is narrower (labels measured about 22% too narrow). The UI now uses `GTAmerica-Condensed-Black-Trial.otf` as a stand-in (labels measure about 3 to 4% wider than the design at 30px). Provide `GTAmerica-Condensed-Bold-Trial.otf` and point the `@font-face` for "GT America Condensed" at it. Italic is synthesized (no Condensed italic file).
+## v5: Condensed Bold
+The design's `Cn_Bd` is **Condensed Bold** (`GTAmerica-Condensed-Bold-Trial.otf`, read from the file: "GT America Trial Cn Bd"). Earlier files were Compressed (narrower) and are no longer used. There is no Condensed italic file, so the italic on the selected block is synthesized by the browser.

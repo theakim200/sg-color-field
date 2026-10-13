@@ -2,8 +2,8 @@
    Fonts: GT America Standard Regular for text, GT America Condensed for color names, "Aa" and step numbers.
    Letter-spacing is -3% everywhere (the design mixes 3.3% and 4%; normalized). */
 @font-face { font-family: "GT America"; src: url("../fonts/GTAmerica-Standard-Regular-Trial.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
-/* The design uses Condensed Bold ("Cn_Bd"). Only Condensed Black is on hand, so it stands in (about 3 to 4% wider than the design). Swap the file here when Condensed Bold arrives. Italic is synthesized. */
-@font-face { font-family: "GT America Condensed"; src: url("../fonts/GTAmerica-Condensed-Black-Trial.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
+/* Condensed Bold ("Cn_Bd" in the design). There is no Condensed italic file, so the browser synthesizes the italic. */
+@font-face { font-family: "GT America Condensed"; src: url("../fonts/GTAmerica-Condensed-Bold-Trial.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
 
 :root {
   --ev: #00A810;
@@ -56,7 +56,9 @@ p { line-height: .88; }
   transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), background-color var(--t-fade) linear, opacity var(--t-block) var(--ease); }
 .blk[data-id="e"] { cursor: default; }
 .blk.gone { opacity: 0; pointer-events: none; }
-.blk.sel { font-style: italic; z-index: 2; will-change: transform; } /* the pose itself is driven by the mouse in app.js */
+.blk { will-change: transform; transform-origin: 50% 50%; }
+.blk::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--ga, 0); background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.9), rgba(255,255,255,0) 58%); mix-blend-mode: soft-light; }
+.blk.sel { font-style: italic; z-index: 3; } /* tilt, lift, shadow and highlight are driven by the pointer in app.js */
 .blk .lab { display: block; padding: 0 20px; }
 .blk .lab em { font-style: inherit; }
 
@@ -156,6 +158,9 @@ p { line-height: .88; }
 .mx .h { display: flex; justify-content: center; height: 11px; align-items: center; margin-bottom: 1px; }
 .mx .h i { width: 11px; height: 11px; border-radius: 50%; display: block; box-shadow: 0 0 0 .5px rgba(0,0,0,.2); }
 .mx .c { height: 38px; border-radius: 5px; position: relative; display: grid; place-items: center; font-family: var(--font-cn); font-weight: 700; font-size: 14px; letter-spacing: 0; }
+.mx .c.same { background: repeating-linear-gradient(45deg, #e4e4e8 0 4px, #f6f6f8 4px 8px); }
+.mx .c.lvl-fail .a { opacity: .4; text-decoration: line-through; }
+.lt.left { margin-top: 8px; font-size: 12px; line-height: 14px; }
 .mx .c .m { position: absolute; right: 4px; bottom: 2px; font: 700 8px/8px var(--font-cn); }
 .mx .c .m svg { display: block; width: 8px; height: 8px; }
 .legend { font-size: 12px; line-height: 14px; color: var(--gray-3); padding: 0 3px; }
@@ -201,3 +206,6 @@ p { line-height: .88; }
 .ititle { position: absolute; left: 0; right: 0; top: 50%; margin-top: -13px; text-align: center; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: 26px; letter-spacing: 0; text-transform: uppercase; opacity: 0; transition: opacity var(--t-title) linear; }
 #art.i-title .ititle { opacity: 1; }
 .rows4 { display: flex; flex-direction: column; padding: 0 3px; } .mxwrap { margin-top: 18px; }
+
+/* not chosen yet: hatched, like the "does not apply" cells in the type matrix */
+.blk.blank { background-image: repeating-linear-gradient(45deg, #e9e9ed 0 6px, #f6f6f8 6px 12px); color: #a9a9b0; }

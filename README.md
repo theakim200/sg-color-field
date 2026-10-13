@@ -12,7 +12,8 @@ Tests: `node tests/engine.test.js`
 ## Layout (v5, from the Figma design)
 Fluid layout on the full window (margin 25px, gutter 20px, no scrolling). Panels run the full height between the margins and are 332px wide (Library 567px). The colors sit once at the center of the free area; blocks span the height minus 50px top and bottom, at most 760px. One panel at a time on the right.
 - **Intro**: `sg` monogram, `s` and `g` travel to the edges while photos stack, then the color blocks and the panel arrive. Click to skip; skipped for shared links and `prefers-reduced-motion` (or `?intro=0`).
-- **Stage**: Ripe / Evergreen / Grounded blocks (radius 46.773). Height follows the balance (rescaled so a balanced color is as large as Evergreen, as drawn). The selected color (steps 2 and 3) faces the mouse: it skews, rotates and shifts toward the pointer and settles into the pose drawn in the design (skew 10°, rotate 2°) when the pointer is over the panel. Tuning is in `M.tilt`. The stage re-centers over the free area and the `g` mark follows the panel edge.
+- **Stage**: Ripe / Evergreen / Grounded blocks (radius 46.773). Height follows the balance (rescaled so a balanced color is as large as Evergreen, as drawn). Blocks are 3D: a hovered block turns to face the pointer, lifts, throws a shadow and catches a highlight; the selected block (steps 2 and 3) keeps facing the pointer anywhere on screen. Tuning is in `M.tilt`. (Replaces the flat skew pose of the Figma frame.)
+- **Not chosen yet**: Ripe and Grounded start hatched (the same hatch as the "does not apply" cells in the type matrix) until a color is picked in step 2 (field, slider, HEX, or a counterpart). Unchosen colors are left out of Apply, exports, the Library thumbnail and the matrix. The stage re-centers over the free area and the `g` mark follows the panel edge.
 - **Panel steps**: 1 Choose an expression (balance slider G to R, layouts) · 2 Explore color (tabs, color field, intensity, HEX check, how it reads) · 3 Explore counterparts (tabs, 3 × 2 suggestions, reset selection) · 4 Apply (HEX / CMYK / RGB / OKLCH, type-on-color matrix, Copy link / JSON / CSS variable, Name this palette, Add to Library / Open Library; Share and Archive sit at the bottom, above the buttons).
 - **`?`** opens About beside the panel; **Library** replaces the panel (the panel slides fully out, then Library slides in; Restart does the same out-and-in) (hover a palette for ✕ delete / ↗ open). Esc closes both.
 - **Palette name** is an addition that is not in the Figma design: a name field above Add to Library in step 4. It becomes the Library label and goes into exports and share links.
@@ -24,7 +25,7 @@ Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v
 
 ## Look
 From the design: white page, `#eee` panel (radius 23), black/gray buttons (radius 13), `#c1c1c1` inactive steps, `#767676` secondary text. Letter-spacing is normalized to -3% (the design mixes 3.3% and 4%). Evergreen is `#00A810`.
-Type: GT America Standard Regular for text; GT America **Condensed** for color names, "Aa", step numbers and the intro title (the design specifies Condensed Bold; the Condensed Black trial is a stand-in until the Bold file is available). See `fonts/README.md` (trial files stay out of git).
+Type: GT America Standard Regular for text; GT America Condensed Bold for color names, "Aa", step numbers and the intro title. See `fonts/README.md` (trial files stay out of git).
 
 Layout knobs in `css/style.css` (`:root`): `--stage-max-h` (tallest the color blocks get, 760px), `--stage-margin-y` (space above and below them, 50px), `--sw` on `#art` (block width, 32.36vw up to 560px).
 
