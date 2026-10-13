@@ -50,10 +50,10 @@ p { line-height: .88; }
 #art.i-blocks #stage { opacity: 1; transform: none; }
 .blk { position: absolute; left: 0; width: 100%; border-radius: 46.773px; display: grid; place-items: center; text-align: center; overflow: visible;
   font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: 0;
-  transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), background-color var(--t-fade) linear, transform var(--t-skew) var(--ease), opacity var(--t-block) var(--ease); }
+  transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), background-color var(--t-fade) linear, opacity var(--t-block) var(--ease); }
 .blk[data-id="e"] { cursor: default; }
 .blk.gone { opacity: 0; pointer-events: none; }
-.blk.sel { transform: translate(6px, 6px) rotate(-2deg) skewX(-10deg) scale(.996, .972); font-style: italic; z-index: 2; }
+.blk.sel { font-style: italic; z-index: 2; will-change: transform; } /* the pose itself is driven by the mouse in app.js */
 .blk .lab { display: block; padding: 0 20px; }
 .blk .lab em { font-style: inherit; }
 
@@ -70,7 +70,7 @@ p { line-height: .88; }
 .foot { flex: none; display: flex; gap: 4px; height: 38px; }
 .btn { height: 38px; border-radius: 13px; font-size: 18px; line-height: 38px; text-align: center; color: #fff; padding: 0; transition: opacity var(--t-fade) linear, background-color var(--t-fade) linear; }
 .btn-black { background: #000; } .btn-gray { background: var(--gray-2); }
-.btn.w123 { width: 123px; } .btn.w250 { width: 250px; } .btn.grow { flex: 1; } .btn.q { width: 38px; font-weight: 700; font-size: 20px; }
+.btn.w123 { width: 123px; } .btn.w250 { width: 250px; } .btn.grow { flex: 1; } .btn.q { width: 38px; display: grid; place-items: center; } .btn.q svg { width: 10px; height: 16px; display: block; }
 .btn:hover { opacity: .88; }
 
 .stepper { list-style: none; display: flex; align-items: center; height: 28px; padding: 0 9px; }

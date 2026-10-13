@@ -18,3 +18,5 @@ Trial limits seen in the supplied files: no upright Regular or Light, and no gly
 
 ## v5 (Figma design)
 v5 uses **GT America Standard Regular** (`GTAmerica-Standard-Regular-Trial.otf`) for all panel text and buttons, and **Compressed Bold** (plus Bold Italic for the tilted selected block) for color names, "Aa" and step numbers. Files needed in this folder: `GTAmerica-Standard-Regular-Trial.otf`, `GTAmerica-Compressed-Bold-Trial.otf`, `GTAmerica-Compressed-Bold-Italic-Trial.otf`. They remain gitignored; without them the UI falls back to Helvetica / Arial.
+
+**Glyph coverage (checked).** All three trial files are genuine GT America (names read from the font files: "GT America Trial Rg", "Cm Bd", "Cm Bd It"). They have no glyphs for `# : / % + ( ) ? & ' ’ “ ” — · ° ≈ ← → ✓ ✕`. In the UI those characters (for example the `#` in HEX values, `/` and `%` in OKLCH, the `?` placeholder text) fall back to Helvetica Neue / Arial. The `?` button and the check / cross marks are drawn as SVG. The licensed fonts will cover them.

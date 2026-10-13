@@ -7,6 +7,8 @@
     panel: 650,       // panels sliding in and out, stage and "g" re-centering with them
     block: 500,       // color block resize when the balance changes
     skew: 420,        // selected color block tilting into its pose
+    seqGap: 60,       // pause between one panel leaving and the next one entering
+    tilt: { follow: 0.18, enter: 0.14, skew: 10, rotate: 2, skewY: 4, shift: 6, reachX: 500, reachY: 400 }, // selected block facing the mouse
     fade: 220,        // small content swaps
     intro: {
       mono: 700,      // "sg" monogram shows alone

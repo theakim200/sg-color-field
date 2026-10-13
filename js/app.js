@@ -21,6 +21,7 @@
   const ROLE_LABEL = { dominant: 'Dominant', supporting: 'Supporting', accent: 'Accent' };
   const LIB_KEY = 'sg-color-field:library:v1';
   const ICON = {
+    q: '<svg viewBox="0 0 10 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M1.3 4.9C1.3 2.8 2.8 1.3 5 1.3s3.7 1.3 3.7 3.2c0 1.6-1 2.2-2 2.9-.9.6-1.7 1.2-1.7 2.6"/><circle cx="5" cy="14.2" r=".6" fill="#fff" stroke-width="1.4"/></svg>',
     check: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4.8l2.3 2.4L8 1.6"/></svg>',
     cross: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M1 1l7 7M8 1L1 8"/></svg>',
     open: '<svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="1.2"><path d="M3 9l6-6M4 3h5v5"/></svg>',
@@ -162,7 +163,35 @@
       b.setAttribute('aria-label', `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
       b.firstChild.textContent = it.label;
     });
+    kickTilt();
   }
+
+  /* ---------- the selected block faces the mouse ----------
+     Pose = how far the mouse is from the block's center (nx horizontal, ny vertical, -1..1). With the mouse over the
+     panel on the right (nx = 1) it settles into the pose drawn in the design: skewed 10deg, rotated 2deg, nudged down-right. */
+  const mouse = { x: null, y: null }, pose = {};
+  let tiltRaf = 0;
+  const kickTilt = () => { if (!tiltRaf) tiltRaf = requestAnimationFrame(tickTilt); };
+  function tickTilt() {
+    tiltRaf = 0;
+    const K = M.tilt, st = $('#stage').getBoundingClientRect(), calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let busy = false;
+    STAGE_ORDER.forEach((id) => {
+      const b = blocks[id], on = b.classList.contains('sel'), p = pose[id] || (pose[id] = { nx: 1, ny: 0, amt: 0 });
+      const cx = st.left + st.width / 2, cy = st.top + b.offsetTop + b.offsetHeight / 2;
+      const tx = mouse.x === null ? 1 : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ty = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1), ta = on ? 1 : 0;
+      const f = calm ? 1 : K.follow, e = calm ? 1 : K.enter;
+      const d = Math.abs(tx - p.nx) + Math.abs(ty - p.ny) + Math.abs(ta - p.amt);
+      p.nx += (tx - p.nx) * f; p.ny += (ty - p.ny) * f; p.amt += (ta - p.amt) * e;
+      if (d > 0.002) busy = true;
+      if (!on && p.amt < 0.003) { p.amt = 0; b.style.transform = ''; return; }
+      const a = p.amt;
+      b.style.transform = `translate(${(K.shift * p.nx * a).toFixed(2)}px, ${((K.shift / 2) * (p.ny + Math.abs(p.nx)) * a).toFixed(2)}px) rotate(${(-K.rotate * p.nx * a).toFixed(3)}deg) skewX(${(-K.skew * p.nx * a).toFixed(3)}deg) skewY(${(K.skewY * p.ny * a).toFixed(3)}deg) scale(${(1 - 0.004 * a).toFixed(4)}, ${(1 - 0.028 * a).toFixed(4)})`;
+    });
+    if (busy) kickTilt();
+  }
+  addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; kickTilt(); });
+  addEventListener('resize', kickTilt);
 
   /* ---------- sliders ---------- */
   function makeSlider(el, pad, onInput, label) {
@@ -193,7 +222,7 @@
     el.stepper.innerHTML = [1, 2, 3, 4].map((n) => `${n > 1 ? `<hr class="${n <= S.step ? 'on' : ''}">` : ''}<li class="${n <= S.step ? 'on' : ''}"><button data-action="step" data-v="${n}" aria-label="Step ${n}" ${n === S.step ? 'aria-current="step"' : ''}>${n}</button></li>`).join('');
   }
   function renderFoot() {
-    const q = '<button class="btn btn-black q" data-action="about" aria-label="About this tool">?</button>';
+    const q = '<button class="btn btn-black q" data-action="about" aria-label="About this tool">' + ICON.q + '</button>';
     el.foot.innerHTML = S.step === 1
       ? `<button class="btn btn-black w250" data-action="next">Next</button>${q}`
       : `<button class="btn btn-gray w123" data-action="back">Back</button>` + (S.step === 4 ? `<button class="btn btn-black w123" data-action="restart">Restart</button>` : `<button class="btn btn-black w123" data-action="next">Next</button>`) + q;
@@ -382,9 +411,20 @@
     $('#lib-grid').innerHTML = list.length ? list.map((it) => `<div class="it"><div class="th">${thumbHtml(it)}<span class="hov"><button data-action="lib-del" data-v="${it.id}" aria-label="Delete">${ICON.del}</button><button data-action="lib-open" data-v="${it.id}" aria-label="Open">${ICON.open}</button></span></div><div class="nm">${esc(libName(it))}</div></div>`).join('')
       : '<p class="empty">Nothing saved yet. Use Add to Library on the Apply step to keep a palette. Saved palettes stay in this browser only.</p>';
   }
+  // Panels never overlap: moving between Main and Library (or About and Library) first sends the current panel
+  // fully off screen, then the next one enters. Main <-> About slide together, as in the design.
+  let viewTimer = 0;
+  function exitThen(fn) {
+    clearTimeout(viewTimer); S.busy = true; $('#art').dataset.view = 'none';
+    viewTimer = setTimeout(() => { fn(); S.busy = false; }, M.panel + M.seqGap);
+  }
   function setView(v) {
-    S.view = v; $('#art').dataset.view = v;
+    const from = S.view; if (from === v) return;
+    S.view = v;
+    const art = $('#art');
     if (v === 'library') renderLibrary();
+    if ((from === 'main' && v === 'library') || (from === 'library' && v !== 'library') || (from === 'about' && v === 'library')) exitThen(() => { art.dataset.view = v; });
+    else art.dataset.view = v;
   }
 
   /* ---------- exports ---------- */
@@ -433,6 +473,9 @@
     S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; fullRender();
   }
   function restart() {
+    exitThen(() => { resetAll(); $('#art').dataset.view = 'main'; });
+  }
+  function resetAll() {
     S.p = 0.5; S.picks = {}; S.chips = { ...seed }; S.names = {};
     for (const id of CHIP_IDS) S.t[id] = T.intensityOf(terrOf(id), seed[id]);
     S.active = 'r1'; goStep(1);
@@ -440,7 +483,7 @@
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-action]');
-    if (!b || !$('#art').contains(b)) return;
+    if (!b || !$('#art').contains(b) || S.busy) return;
     const a = b.dataset.action, v = b.dataset.v;
     if (S.view === 'library' && ['lib-del', 'lib-open'].indexOf(a) < 0 && a !== 'close-sheet') return;
     if (a === 'next') goStep(S.step + 1);
@@ -466,7 +509,7 @@
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.view !== 'main' && S.view !== 'intro') setView('main'); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.busy && S.view !== 'main' && S.view !== 'intro') setView('main'); });
 
   addEventListener('resize', () => { if (cur) renderStage(); });
 
