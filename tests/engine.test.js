@@ -69,8 +69,9 @@ ok('hierarchy follows area; Evergreen always present; dominant can host type', (
 ok('spectrum: every combo has at most 3 chips (Evergreen excluded) and 3-chip combos are flagged', () => {
   const all = SP.ZONES.flatMap((z) => z.combos);
   assert.deepStrictEqual([...new Set(all)].sort(), ['ER', 'ERR', 'GE', 'GER', 'GERR', 'GGE', 'GGER']);
-  for (const c of all) { const q = SP.parse(c); assert(q.valid && q.chips <= SP.MAX_CHIPS, c); assert.strictEqual(q.recommended, q.chips <= 2, c); }
+  for (const c of all) { const q = SP.parse(c); assert(q.valid && q.chips <= SP.MAX_CHIPS, c); assert.strictEqual(q.recommended, q.g <= 1 && q.r <= 1, c); }
   assert.strictEqual(SP.parse('GGER').recommended, false); assert.strictEqual(SP.parse('GERR').recommended, false);
+  assert.strictEqual(SP.parse('GGE').recommended, false); assert.strictEqual(SP.parse('ERR').recommended, false); assert.strictEqual(SP.parse('GE').recommended, true);
 });
 ok('spectrum: zones are exactly the agreed layouts, Grounded end -> Ripe end', () => {
   assert.deepStrictEqual(SP.ZONES.map((z) => z.combos), [['GGE', 'GE'], ['GGER', 'GER'], ['GER'], ['GERR', 'GER'], ['ERR', 'ER']]);
@@ -80,8 +81,8 @@ ok('spectrum: zones are exactly the agreed layouts, Grounded end -> Ripe end', (
   assert(SP.ZONES[0].combos.every((c) => !c.includes('R')), 'Grounded end has no Ripe');
   assert(SP.ZONES[4].combos.every((c) => !c.includes('G')), 'Ripe end has no Grounded');
 });
-ok('spectrum: default layout is the first recommended one (never a 3-chip layout)', () => {
-  assert.deepStrictEqual(SP.ZONES.map((z) => z.combos[SP.defaultPick(z)]), ['GGE', 'GER', 'GER', 'GER', 'ERR']);
+ok('spectrum: default layout is the first recommended one (never two of one territory)', () => {
+  assert.deepStrictEqual(SP.ZONES.map((z) => z.combos[SP.defaultPick(z)]), ['GE', 'GER', 'GER', 'GER', 'ER']);
 });
 ok('spectrum: center GER is balanced; side GERs lean Grounded / Ripe', () => {
   const mid = SP.areas(0.5, 'GER'), mid2 = SP.areas(0.45, 'GER'), mid3 = SP.areas(0.55, 'GER');

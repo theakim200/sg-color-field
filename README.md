@@ -10,7 +10,7 @@ Static site, no build step. Open `index.html`, or `python3 -m http.server 8080`.
 Tests: `node tests/engine.test.js`
 
 ## Layout (v5, from the Figma design)
-A fixed **1440 × 810 artboard** scaled to fit the window (no scrolling). The colors sit once at the center; one panel at a time on the right.
+Fluid layout on the full window (margin 25px, gutter 20px, no scrolling). Panels run the full height between the margins and are 332px wide (Library 567px). The colors sit once at the center of the free area; blocks span the height minus 50px top and bottom, at most 760px. One panel at a time on the right.
 - **Intro**: `sg` monogram, `s` and `g` travel to the edges while photos stack, then the color blocks and the panel arrive. Click to skip; skipped for shared links and `prefers-reduced-motion` (or `?intro=0`).
 - **Stage**: Ripe / Evergreen / Grounded blocks (radius 46.773). Height follows the balance (rescaled so a balanced color is as large as Evergreen, as drawn). The selected color tilts into a skewed pose with italic type in steps 2 and 3 (pose fitted to the Figma frame). The stage re-centers over the free area and the `g` mark follows the panel edge.
 - **Panel steps**: 1 Choose an expression (balance slider G to R, layouts) · 2 Explore color (tabs, color field, intensity, HEX check, how it reads, **name this color**, Add Ripe/Grounded) · 3 Explore counterparts (tabs, 3 × 2 suggestions, reset selection) · 4 Apply (HEX / CMYK / RGB / OKLCH, type-on-color matrix, Copy link / JSON / CSS variable, Add to Library / Open Library).
@@ -47,8 +47,8 @@ Type: GT America Standard Regular for text, GT America Compressed Bold for color
 - Output (HEX/RGB/CMYK/OKLCH, combinations, CSS, JSON, shareable link) → `app.js` (right panel, stage, top bar)
 
 ## The balance handlebar
-Evergreen is always present and never counted. At most **3 other chips**; 3 is possible but flagged *not recommended*.
-The handlebar runs **G (left) to R (right)** through five zones. Letters: G Grounded, E Evergreen, R Ripe. The default layout in each zone is the first recommended one.
+Evergreen is always present and never counted. At most **3 other chips**. Two Grounded or two Ripe (so `GGE`, `GGER`, `GERR`, `ERR`) are possible but flagged *not recommended*; layouts are listed fewest colors first. A second Ripe stacks above the first.
+The handlebar runs **G (left) to R (right)** through five zones. Letters: G Grounded, E Evergreen, R Ripe. The default layout in each zone is the first recommended one (`GE`, `GER`, `GER`, `GER`, `ER`).
 
 | Zone | Layouts | Visual weight |
 |---|---|---|

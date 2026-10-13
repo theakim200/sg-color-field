@@ -14,7 +14,8 @@
 
   const FIELD = { w: 360, h: 194, Ltop: 0.97, Lbot: 0.2 };
   const CHIP_IDS = ['g1', 'g2', 'r1', 'r2'];
-  const STAGE_H = 710;
+  const STAGE_ORDER = ['r2', 'r1', 'e', 'g1', 'g2']; // a second Ripe stacks above the first
+  let STAGE_H = 710;
   const terrOf = (id) => (id[0] === 'g' ? 'grounded' : 'ripe');
   const LEVEL = { body: ['Body text', 'good'], large: ['Large text only', 'warn'], fail: ['Avoid', 'bad'] };
   const ROLE_LABEL = { dominant: 'Dominant', supporting: 'Supporting', accent: 'Accent' };
@@ -55,7 +56,7 @@
       const spec = E.spec(S.chips[id]);
       return { id, key: terrOf(id), hex: spec.hex, c: spec.oklch, spec, area: area[id], label: labelOf(id) };
     };
-    const order = ['r1', 'r2', 'e', 'g1', 'g2'].filter((id) => id === 'e' || ids.includes(id));
+    const order = STAGE_ORDER.filter((id) => id === 'e' || ids.includes(id));
     const items = order.map(mk), byId = Object.fromEntries(items.map((i) => [i.id, i]));
     const ranked = E.hierarchy(items), roles = Object.fromEntries(ranked.map((o) => [o.id, o]));
     cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: items.filter((i) => i.id !== 'e'), hasG: q.g > 0, hasR: q.r > 0, labelOf };
@@ -133,20 +134,25 @@
   /* ---------- stage: the colors, once ---------- */
   const blocks = {};
   function buildStage() {
-    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
+    STAGE_ORDER.forEach((id) => {
       const b = document.createElement('div'); b.className = 'blk gone'; b.dataset.id = id; b.dataset.action = 'chip'; b.dataset.v = id;
       b.innerHTML = '<span class="lab"></span>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
+  function sizeStage() { // full viewport height minus 50px top and bottom, at most 760px
+    STAGE_H = Math.max(320, Math.min(innerHeight - 100, 760));
+    const st = $('#stage'); st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
+  }
   function renderStage() {
+    sizeStage();
     const raw = {}; let sum = 0;
-    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
+    STAGE_ORDER.forEach((id) => {
       const it = cur.byId[id]; if (!it) return;
       // the engine's visual area, rescaled so a balanced color is as large as Evergreen (as drawn in the design)
       raw[id] = id === 'e' ? 1 : Math.max(0.35, 0.5 + (it.area - 0.25) / 0.95); sum += raw[id];
     });
     let y = 0;
-    ['r1', 'r2', 'e', 'g1', 'g2'].forEach((id) => {
+    STAGE_ORDER.forEach((id) => {
       const b = blocks[id], it = cur.byId[id];
       if (!it) { b.classList.add('gone'); b.style.height = '0px'; b.style.top = (id[0] === 'r' ? 0 : STAGE_H) + 'px'; b.classList.remove('sel'); return; }
       const h = (STAGE_H * raw[id]) / sum;
@@ -211,8 +217,7 @@
         <div class="abs track small" id="int" style="top:304px"><span class="knob"></span></div>
         <div class="abs inp" style="top:331px"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
         <div class="abs res" id="res" style="top:382px"></div>
-        <div class="abs inp name" style="top:446px"><input id="nm" type="text" maxlength="24" placeholder="Name this color (optional)" spellcheck="false" autocomplete="off" aria-label="Color name"></div>
-        <div class="abs" id="prompt" style="top:524px;font-size:14px;line-height:16px"></div>`;
+        <div class="abs inp name" style="top:446px"><input id="nm" type="text" maxlength="24" placeholder="Name this color (optional)" spellcheck="false" autocomplete="off" aria-label="Color name"></div>`;
     } else if (S.step === 3) {
       w.innerHTML = hd('Explore counterparts', '') + `<div class="abs tabs" id="tabs" style="top:74px"></div><div class="abs" id="cp" style="top:114px"></div>`;
     } else {
@@ -249,7 +254,7 @@
 
   function renderStep1() {
     ui.bal.set(S.p);
-    const order = cur.z.combos.map((code, i) => i).sort((x, y) => SP.parse(cur.z.combos[y]).recommended - SP.parse(cur.z.combos[x]).recommended); // recommended first
+    const order = cur.z.combos.map((code, i) => i).sort((x, y) => SP.parse(cur.z.combos[x]).chips - SP.parse(cur.z.combos[y]).chips); // fewer colors on top
     $('#opts').innerHTML = order.map((i) => {
       const code = cur.z.combos[i], q = SP.parse(code), ids = SP.ids(code);
       const dots = [...ids.filter((x) => x[0] === 'g'), 'e', ...ids.filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
@@ -271,8 +276,6 @@
 
     const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
     $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
-    const other = cur.hasG && cur.hasR ? null : cur.hasG ? 'ripe' : 'grounded';
-    $('#prompt').innerHTML = other ? `<p>Want a ${terrName(other)} counterpart before you move on? We'll suggest options that work with your color and Evergreen.</p><button class="lnk" data-action="mix" style="margin-top:8px">Add ${terrName(other)}</button>` : '';
   }
 
   function buildField(key, t) {
@@ -465,12 +468,7 @@
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.view !== 'main' && S.view !== 'intro') setView('main'); });
 
-  /* ---------- scale the artboard to the window ---------- */
-  function fit() {
-    const k = Math.min(innerWidth / 1440, innerHeight / 810);
-    $('#art').style.transform = `scale(${k})`;
-  }
-  addEventListener('resize', fit); fit();
+  addEventListener('resize', () => { if (cur) renderStage(); });
 
   /* ---------- init ---------- */
   M.apply(document.documentElement);
@@ -481,10 +479,10 @@
   fullRender();
   const art = $('#art');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || /[?&]intro=0/.test(location.search);
-  if (fromLink || reduce) art.dataset.view = 'main';
+  if (fromLink || reduce) { art.classList.remove('i-mono'); art.dataset.view = 'main'; }
   else {
     M.runIntro(art, $('#intro'), () => { /* ready */ });
-    art.addEventListener('click', () => { if (art.dataset.view === 'intro' || art.classList.contains('i-mono')) M.skip(); });
+    art.addEventListener('click', () => { if (art.dataset.view === 'intro') M.skip(); });
   }
   window.SGApp = { state: S, snapshot: () => cur, exportData, loadLib, goStep };
 })();

@@ -19,7 +19,7 @@
   --font-cn: "GT America Compressed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --track: -0.03em;
   --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1);
-  --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 800ms; --t-collapse: 500ms;
+  --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 800ms; --t-collapse: 450ms; --t-blocks: 500ms;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; background: #fff; overflow: hidden; }
@@ -29,25 +29,26 @@ button { cursor: pointer; }
 button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); outline-offset: 2px; }
 p { line-height: .88; }
 
-#frame { position: fixed; inset: 0; display: grid; place-items: center; background: #fff; }
-#art { position: absolute; left: 50%; top: 50%; margin: -405px 0 0 -720px; width: 1440px; height: 810px; transform-origin: center center; background: #fff; overflow: hidden; --pl: 1435px; }
-#art[data-view="main"] { --pl: 1083px; }
-#art[data-view="about"] { --pl: 731px; }
-#art[data-view="library"] { --pl: 848px; }
+#frame { position: fixed; inset: 0; background: #fff; }
+/* Fluid layout: margin 25px, gutter 20px. --pl is the left edge of the panel area (used to center the stage and place g). */
+#art { position: absolute; inset: 0; overflow: hidden; --pl: calc(100vw - 4px); --sw: min(32.36vw, 560px); }
+#art[data-view="main"] { --pl: calc(100vw - 357px); }
+#art[data-view="about"] { --pl: calc(100vw - 709px); }
+#art[data-view="library"] { --pl: calc(100vw - 592px); }
 
 /* ---------- s and g ---------- */
-.mk { position: absolute; top: 394px; display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.mk { position: absolute; top: calc(50% - 11px); display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 .mk-s { left: 25px; width: 20.28px; height: 22.08px; transition: left var(--t-panel) var(--ease); }
 .mk-g { left: calc(var(--pl) - 42px); width: 22.28px; height: 28.51px; transition: left var(--t-panel) var(--ease); }
-#art.i-mono .mk-s { left: 698px; } #art.i-mono .mk-g { left: 722px; }
+#art.i-mono .mk-s { left: calc(50vw - 23px); } #art.i-mono .mk-g { left: calc(50vw + 0.5px); }
 #art[data-view="intro"] .mk-s, #art[data-view="intro"] .mk-g { transition-duration: var(--t-edges); transition-timing-function: var(--ease-io); }
 #art.i-mono.i-edges .mk-s { left: 25px; } #art.i-mono.i-edges .mk-g { left: calc(var(--pl) - 42px); }
 
-/* ---------- stage ---------- */
-#stage { position: absolute; top: 50px; height: 710px; width: 466px; left: calc(var(--pl) / 2 + 1.5px - 233px); transition: left var(--t-panel) var(--ease), opacity var(--t-collapse) var(--ease), transform var(--t-collapse) var(--ease); }
+/* ---------- stage (height and top are set from script: viewport height minus 100px, at most 760px) ---------- */
+#stage { position: absolute; width: var(--sw); left: calc(var(--pl) / 2 + 1.5px); margin-left: calc(var(--sw) / -2); transition: left var(--t-panel) var(--ease), opacity var(--t-blocks) var(--ease), transform var(--t-blocks) var(--ease); }
 #art[data-view="intro"] #stage { opacity: 0; transform: scale(.94); pointer-events: none; }
-#art.i-collapse #stage { opacity: 1; transform: none; }
-.blk { position: absolute; left: 0; width: 466px; border-radius: 46.773px; display: grid; place-items: center; text-align: center; overflow: visible;
+#art.i-blocks #stage { opacity: 1; transform: none; }
+.blk { position: absolute; left: 0; width: 100%; border-radius: 46.773px; display: grid; place-items: center; text-align: center; overflow: visible;
   font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: 0;
   transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), background-color var(--t-fade) linear, transform var(--t-skew) var(--ease), opacity var(--t-block) var(--ease); }
 .blk[data-id="e"] { cursor: default; }
@@ -56,15 +57,16 @@ p { line-height: .88; }
 .blk .lab { display: block; padding: 0 20px; }
 .blk .lab em { font-style: inherit; }
 
-/* ---------- panels ---------- */
-.panel { position: absolute; top: 25px; height: 760px; width: 332px; left: 1465px; background: var(--panel); border-radius: 23px; transition: left var(--t-panel) var(--ease); z-index: 3; }
-#art[data-view="main"] #p-main { left: 1083px; }
-#art[data-view="about"] #p-main { left: 731px; }
-#art[data-view="about"] #p-about { left: 1084px; }
-#art[data-view="library"] #p-lib { left: 848px; width: 567px; }
-#p-lib { width: 567px; }
+/* ---------- panels: full height between the 25px margins ---------- */
+.panel { position: absolute; top: 25px; bottom: 25px; width: 332px; right: -380px; background: var(--panel); border-radius: 23px; transition: right var(--t-panel) var(--ease); z-index: 3; }
+#art[data-view="main"] #p-main { right: 25px; }
+#art[data-view="about"] #p-main { right: 377px; }
+#art[data-view="about"] #p-about { right: 25px; }
+#p-lib { width: 567px; right: -620px; }
+#art[data-view="library"] #p-lib { right: 25px; }
 .panel .in { position: absolute; inset: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-.panel .body { min-height: 0; flex: 1 1 auto; position: relative; }
+.panel .body { min-height: 0; flex: 1 1 auto; position: relative; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.panel .body::-webkit-scrollbar { display: none; }
 .foot { flex: none; display: flex; gap: 4px; height: 38px; }
 .btn { height: 38px; border-radius: 13px; font-size: 18px; line-height: 38px; text-align: center; color: #fff; padding: 0; transition: opacity var(--t-fade) linear, background-color var(--t-fade) linear; }
 .btn-black { background: #000; } .btn-gray { background: var(--gray-2); }
@@ -76,7 +78,7 @@ p { line-height: .88; }
 .stepper .on button { background: #000; }
 .stepper hr { flex: 1; height: 1px; border: 0; background: var(--gray-1); transition: background-color var(--t-fade) linear; }
 .stepper hr.on { background: #000; }
-#step-body { position: absolute; left: 0; right: 0; top: 55px; bottom: 0; }
+#step-body { position: absolute; left: 0; right: 0; top: 55px; bottom: 0; min-height: 640px; }
 #step-body > .sw { position: absolute; inset: 0; animation: swap var(--t-fade) linear; }
 @keyframes swap { from { opacity: 0; } to { opacity: 1; } }
 

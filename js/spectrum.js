@@ -2,7 +2,7 @@
    Grounded <-> Ripe balance, and how much visual area each chip gets.
 
    Notation: G = Grounded chip, E = Evergreen (always present, never counted), R = Ripe chip.
-   At most 3 chips excluding Evergreen. Three chips are possible but not recommended.
+   At most 3 chips excluding Evergreen. Two Grounded or two Ripe (and so any 3-chip layout) are possible but not recommended.
 
    The balance value p is the Ripe weight: 0 = Grounded end, 1 = Ripe end (slider runs G -> R).
    Zones are listed from the Grounded end to the Ripe end. In each zone the default layout is
@@ -35,7 +35,8 @@
 
   function parse(code) {
     const g = (code.match(/G/g) || []).length, r = (code.match(/R/g) || []).length;
-    return { g, r, chips: g + r, recommended: g + r <= RECOMMENDED_MAX, valid: g + r <= MAX_CHIPS && g + r >= 1 && code.includes('E') };
+    return { g, r, chips: g + r, recommended: g <= 1 && r <= 1, // two of the same territory, or three chips, is possible but not recommended
+       valid: g + r <= MAX_CHIPS && g + r >= 1 && code.includes('E') };
   }
 
   /** Chip ids present in a combo, e.g. 'GGER' -> ['g1','g2','r1']. */
