@@ -1,9 +1,9 @@
 /* Sweetgreen Color Field, v5. Built from the Figma frames (1440 x 810 artboard, scaled to fit).
-   Fonts: GT America Standard Regular for text, GT America Compressed Bold for color names, "Aa" and step numbers.
+   Fonts: GT America Standard Regular for text, GT America Condensed for color names, "Aa" and step numbers.
    Letter-spacing is -3% everywhere (the design mixes 3.3% and 4%; normalized). */
 @font-face { font-family: "GT America"; src: url("../fonts/GTAmerica-Standard-Regular-Trial.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: "GT America Compressed"; src: url("../fonts/GTAmerica-Compressed-Bold-Trial.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "GT America Compressed"; src: url("../fonts/GTAmerica-Compressed-Bold-Italic-Trial.otf") format("opentype"); font-weight: 700; font-style: italic; font-display: swap; }
+/* The design uses Condensed Bold ("Cn_Bd"). Only Condensed Black is on hand, so it stands in (about 3 to 4% wider than the design). Swap the file here when Condensed Bold arrives. Italic is synthesized. */
+@font-face { font-family: "GT America Condensed"; src: url("../fonts/GTAmerica-Condensed-Black-Trial.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
 
 :root {
   --ev: #00A810;
@@ -16,9 +16,12 @@
   --red: #fe4848;
   --good: #00ac00;
   --font: "GT America", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-cn: "GT America Compressed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-cn: "GT America Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --track: -0.03em;
   --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1);
+  --stage-max-h: 760px;   /* tallest the three color blocks get */
+  --stage-margin-y: 50px; /* space above and below the blocks */
+  --t-pill: 380ms; --t-title: 350ms;
   --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 800ms; --t-collapse: 450ms; --t-blocks: 500ms;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +34,7 @@ p { line-height: .88; }
 
 #frame { position: fixed; inset: 0; background: #fff; }
 /* Fluid layout: margin 25px, gutter 20px. --pl is the left edge of the panel area (used to center the stage and place g). */
-#art { position: absolute; inset: 0; overflow: hidden; --pl: calc(100vw - 4px); --sw: min(32.36vw, 560px); }
+#art { position: absolute; inset: 0; overflow: hidden; --pl: calc(100vw - 4px); --sw: min(32.36vw, 560px); /* block width: 32.36% of the window, at most 560px */ }
 #art[data-view="main"] { --pl: calc(100vw - 357px); }
 #art[data-view="about"] { --pl: calc(100vw - 709px); }
 #art[data-view="library"] { --pl: calc(100vw - 592px); }
@@ -99,8 +102,10 @@ p { line-height: .88; }
 .track.big { height: 23px; } .track.big .knob { width: 19px; height: 19px; }
 .track.small { height: 15px; border-radius: 8px; } .track.small .knob { width: 13px; height: 13px; }
 .opts { display: flex; flex-direction: column; gap: 0; }
+.pill { position: absolute; left: 0; top: 0; width: 0; height: 0; background: #fff; border-radius: 13px; z-index: 0; pointer-events: none; transition: left var(--t-pill) var(--ease), top var(--t-pill) var(--ease), width var(--t-pill) var(--ease), height var(--t-pill) var(--ease), opacity var(--t-fade) linear; }
+.pill.still { transition: none; }
 .opt { text-align: left; border-radius: 13px; padding: 11px; display: block; width: 100%; position: relative; }
-.opt.on { background: #fff; }
+.opt { z-index: 1; }
 .opt small { display: block; font-size: 11px; line-height: 11px; color: var(--gray-3); }
 .opt .dots { display: flex; gap: 2px; margin: 5px 0 5px; height: 11px; }
 .opt .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
@@ -111,7 +116,7 @@ p { line-height: .88; }
 /* step 2 */
 .tabs { display: flex; justify-content: center; height: 26px; }
 .tab { height: 26px; border-radius: 13px; padding: 0 10px; font-size: 14px; display: inline-flex; align-items: center; gap: 4.5px; line-height: 16px; white-space: nowrap; transition: background-color var(--t-fade) linear; }
-.tab.on { background: #fff; }
+.tab { position: relative; z-index: 1; }
 .tab i { width: 11px; height: 11px; border-radius: 50%; display: block; }
 .fieldbox { position: relative; height: 157px; border-radius: 14px; background: #e3e3e3; overflow: hidden; touch-action: none; cursor: crosshair; }
 .fieldbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -156,7 +161,7 @@ p { line-height: .88; }
 .legend { font-size: 12px; line-height: 14px; color: var(--gray-3); padding: 0 3px; }
 .legend span { margin-right: 8px; white-space: nowrap; } .legend svg { width: 9px; height: 9px; vertical-align: -1px; margin-right: 2px; }
 .sh { font-size: 14px; line-height: 16px; } .sh .row { display: flex; gap: 8px; margin-top: 3px; } .sh .row .lnk { font-size: 14px; }
-.dense .crow .sw { width: 34px; height: 34px; } .dense .crow .vals { margin-top: 4px; } .dense .mx .c { height: 28px; }
+.dense .crow .sw { width: 40px; height: 40px; } .dense .crow .vals { margin-top: 4px; } .dense .mx .c { height: 28px; }
 
 /* about */
 .about { flex: 1 1 auto; min-height: 0; font-size: 17.5px; line-height: 16px; overflow: hidden; letter-spacing: -0.045em; }
@@ -188,3 +193,11 @@ p { line-height: .88; }
 
 .abs.fieldbox, .abs.inp, .abs.track, .abs.tabs { position: absolute; }
 #p-lib .foot { padding: 0 20px; }
+
+/* Apply: Share and Archive sit on the bottom, a fixed distance above the buttons */
+.abs.bot { top: auto; bottom: 24px; display: flex; flex-direction: column; gap: 14px; }
+.bot .inp, .bot .inp input { height: 28px; } .bot .inp { margin: 6px 0; } .bot .inp input { border-radius: 14px; font-size: 14px; }
+/* intro title */
+.ititle { position: absolute; left: 0; right: 0; top: 50%; margin-top: -13px; text-align: center; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: 26px; letter-spacing: 0; text-transform: uppercase; opacity: 0; transition: opacity var(--t-title) linear; }
+#art.i-title .ititle { opacity: 1; }
+.rows4 { display: flex; flex-direction: column; padding: 0 3px; } .mxwrap { margin-top: 18px; }

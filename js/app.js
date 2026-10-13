@@ -34,7 +34,7 @@
 
   const S = {
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
-    chips: { ...seed }, names: {},
+    chips: { ...seed }, pname: '',
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
     recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
@@ -48,7 +48,6 @@
     const nOf = (k) => ids.filter((i) => terrOf(i) === k).length;
     const labelOf = (id) => {
       if (id === 'e') return 'Evergreen';
-      if (S.names[id]) return S.names[id];
       const k = terrOf(id);
       return TERRITORIES[k].label + (nOf(k) > 1 ? ' ' + id[1] : '');
     };
@@ -72,10 +71,10 @@
     if (S.step !== 4) { if (location.hash) history.replaceState(null, '', location.pathname + location.search); return; }
     const q = new URLSearchParams({ v: '2', p: S.p.toFixed(3), c: cur.code, pk: JSON.stringify(S.picks) });
     CHIP_IDS.forEach((id) => q.set(id, E.spec(S.chips[id]).hex.slice(1)));
-    if (Object.keys(S.names).length) q.set('nm', JSON.stringify(S.names));
+    if (S.pname) q.set('nm', S.pname);
     history.replaceState(null, '', '#' + q.toString());
   }
-  function applyState({ p, picks, hex, names }) {
+  function applyState({ p, picks, hex, name }) {
     if (typeof p === 'number' && p >= 0 && p <= 1) S.p = p;
     S.picks = {};
     for (const z of SP.ZONES) if (picks && Number.isInteger(picks[z.id]) && picks[z.id] >= 0 && picks[z.id] < z.combos.length) S.picks[z.id] = picks[z.id];
@@ -86,17 +85,15 @@
       S.chips[id] = T.membership(c).territory === k ? c : T.snapInto(k, c);
       S.t[id] = T.intensityOf(k, S.chips[id]);
     }
-    S.names = {};
-    if (names && typeof names === 'object') for (const id of CHIP_IDS) if (typeof names[id] === 'string' && names[id].trim()) S.names[id] = names[id].trim().slice(0, 24);
+    S.pname = typeof name === 'string' ? name.trim().slice(0, 28) : '';
   }
   function readHash() {
     const q = new URLSearchParams(location.hash.slice(1));
     const hex = Object.fromEntries(CHIP_IDS.map((id) => [id, q.get(id)]));
     if (q.get('v') !== '2') { applyState({ hex }); return false; }
-    let picks = {}, names = {};
+    let picks = {};
     try { picks = JSON.parse(q.get('pk') || '{}') || {}; } catch (e) { /* ignore */ }
-    try { names = JSON.parse(q.get('nm') || '{}') || {}; } catch (e) { /* ignore */ }
-    applyState({ p: parseFloat(q.get('p')), picks, hex, names });
+    applyState({ p: parseFloat(q.get('p')), picks, hex, name: q.get('nm') || '' });
     return true;
   }
 
@@ -110,15 +107,12 @@
     memLib = list;
     try { localStorage.setItem(LIB_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
   }
-  const libName = (it) => {
-    const ids = SP.ids(it.code), n = it.names || {};
-    const named = ['r1', 'r2', 'g1', 'g2'].find((id) => ids.includes(id) && n[id]);
-    return named ? n[named] : SP.label(it.code).replace(' + Evergreen', '');
-  };
+  const libName = (it) => it.name || SP.label(it.code).replace(' + Evergreen', '');
   function addToLibrary() {
     const list = loadLib();
     const hex = Object.fromEntries(CHIP_IDS.map((id) => [id, E.spec(S.chips[id]).hex]));
-    list.unshift({ id: Date.now().toString(36), savedAt: Date.now(), p: +S.p.toFixed(3), picks: { ...S.picks }, code: cur.code, hex, names: { ...S.names } });
+    list.unshift({ id: Date.now().toString(36), savedAt: Date.now(), p: +S.p.toFixed(3), picks: { ...S.picks }, code: cur.code, hex, name: S.pname });
+    S.pname = '';
     const ok = saveLib(list.slice(0, 60));
     setView('library');
     if (!ok) toast('Saved for this visit only (browser storage is off)');
@@ -141,7 +135,8 @@
     });
   }
   function sizeStage() { // full viewport height minus 50px top and bottom, at most 760px
-    STAGE_H = Math.max(320, Math.min(innerHeight - 100, 760));
+    const cs = getComputedStyle(document.documentElement), maxH = parseFloat(cs.getPropertyValue('--stage-max-h')) || 760, my = parseFloat(cs.getPropertyValue('--stage-margin-y')) || 50;
+    STAGE_H = Math.max(320, Math.min(innerHeight - 2 * my, maxH));
     const st = $('#stage'); st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
   }
   function renderStage() {
@@ -167,8 +162,8 @@
   }
 
   /* ---------- the selected block faces the mouse ----------
-     Pose = how far the mouse is from the block's center (nx horizontal, ny vertical, -1..1). With the mouse over the
-     panel on the right (nx = 1) it settles into the pose drawn in the design: skewed 10deg, rotated 2deg, nudged down-right. */
+     Pose = how far the mouse is from the block's center (nx horizontal, ny vertical, -1..1). nx = 1 (mouse to the left of the block, or no mouse yet)
+     is the pose drawn in the design (top edge leaning right); the mouse on the other side mirrors it. */
   const mouse = { x: null, y: null }, pose = {};
   let tiltRaf = 0;
   const kickTilt = () => { if (!tiltRaf) tiltRaf = requestAnimationFrame(tickTilt); };
@@ -179,7 +174,7 @@
     STAGE_ORDER.forEach((id) => {
       const b = blocks[id], on = b.classList.contains('sel'), p = pose[id] || (pose[id] = { nx: 1, ny: 0, amt: 0 });
       const cx = st.left + st.width / 2, cy = st.top + b.offsetTop + b.offsetHeight / 2;
-      const tx = mouse.x === null ? 1 : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ty = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1), ta = on ? 1 : 0;
+      const tx = mouse.x === null ? 1 : C.clamp((cx - mouse.x) / K.reachX, -1, 1), ty = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1), ta = on ? 1 : 0;
       const f = calm ? 1 : K.follow, e = calm ? 1 : K.enter;
       const d = Math.abs(tx - p.nx) + Math.abs(ty - p.ny) + Math.abs(ta - p.amt);
       p.nx += (tx - p.nx) * f; p.ny += (ty - p.ny) * f; p.amt += (ta - p.amt) * e;
@@ -236,23 +231,23 @@
       w.innerHTML = hd('Choose an expression', 'Slide between Grounded and Ripe') + `
         <div class="abs" style="top:79px"><div class="axis"><span>Grounded</span><i><b></b></i><span>Ripe</span></div>
           <div class="track big" id="bal" style="margin-top:8px"><span class="knob"></span></div></div>
-        <div class="abs opts" id="opts" style="top:143px"></div>`;
+        <div class="abs opts" id="opts" style="top:143px"><span class="pill"></span></div>`;
     } else if (S.step === 2) {
       w.innerHTML = hd('Explore color', '') + `
-        <div class="abs tabs" id="tabs" style="top:73px"></div>
+        <div class="abs tabs" id="tabs" style="top:73px"><span class="pill"></span></div>
         <div class="abs fieldbox" id="fieldbox" style="top:113px" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
           <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
         <div class="abs axis" style="top:279px"><span id="lo"></span><i><b></b></i><span id="hi"></span></div>
         <div class="abs track small" id="int" style="top:304px"><span class="knob"></span></div>
         <div class="abs inp" style="top:331px"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
-        <div class="abs res" id="res" style="top:382px"></div>
-        <div class="abs inp name" style="top:446px"><input id="nm" type="text" maxlength="24" placeholder="Name this color (optional)" spellcheck="false" autocomplete="off" aria-label="Color name"></div>`;
+        <div class="abs res" id="res" style="top:382px"></div>`;
     } else if (S.step === 3) {
-      w.innerHTML = hd('Explore counterparts', '') + `<div class="abs tabs" id="tabs" style="top:74px"></div><div class="abs" id="cp" style="top:114px"></div>`;
+      w.innerHTML = hd('Explore counterparts', '') + `<div class="abs tabs" id="tabs" style="top:74px"><span class="pill"></span></div><div class="abs" id="cp" style="top:114px"></div>`;
     } else {
       w.innerHTML = '<div id="apply"></div>';
     }
     el.body.replaceChildren(w);
+    el.body.style.minHeight = '';
     if (S.step === 1) ui.bal = makeSlider($('#bal'), 2, (v) => { S.p = v; schedule(); }, 'Balance between Grounded and Ripe');
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
@@ -269,28 +264,39 @@
         S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); S.testMsg = ''; schedule();
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
-      $('#nm').addEventListener('input', (e) => { const v = e.target.value.trim().slice(0, 24); if (v) S.names[S.active] = v; else delete S.names[S.active]; snapshot(); renderStage(); renderTabs(); });
-      ui.nmFor = null;
     }
   }
 
   function tabsHtml(list) {
     return list.map((it) => `<button class="tab${S.active === it.id ? ' on' : ''}" role="tab" aria-selected="${S.active === it.id}" data-action="chip" data-v="${it.id}"><i style="background:${it.hex}"></i>${esc(it.label)}</button>`).join('');
   }
-  function renderTabs() { const t = $('#tabs'); if (t) t.innerHTML = tabsHtml(cur.chipItems); }
+  // The white highlight is one persistent element that slides to the selected item; only the items are rebuilt.
+  function slidePill(box, items, selector) {
+    const pill = $('.pill', box); $$(items, box).forEach((n) => n.remove());
+    return (html) => {
+      pill.insertAdjacentHTML('afterend', html);
+      const on = $(selector, box);
+      if (!on) { pill.style.opacity = 0; return; }
+      const first = !pill.dataset.placed;
+      if (first) pill.classList.add('still');
+      pill.style.opacity = 1; pill.style.left = on.offsetLeft + 'px'; pill.style.top = on.offsetTop + 'px'; pill.style.width = on.offsetWidth + 'px'; pill.style.height = on.offsetHeight + 'px';
+      if (first) { pill.dataset.placed = '1'; pill.offsetWidth; pill.classList.remove('still'); } // eslint-disable-line no-unused-expressions
+    };
+  }
+  function renderTabs() { const t = $('#tabs'); if (t) slidePill(t, '.tab', '.tab.on')(tabsHtml(cur.chipItems)); }
 
   const overallLabel = (s) => (s >= 0.72 ? ['strong match', 'good'] : s >= 0.55 ? ['good match', 'info'] : ['use with care', 'warn']);
 
   function renderStep1() {
     ui.bal.set(S.p);
     const order = cur.z.combos.map((code, i) => i).sort((x, y) => SP.parse(cur.z.combos[x]).chips - SP.parse(cur.z.combos[y]).chips); // fewer colors on top
-    $('#opts').innerHTML = order.map((i) => {
+    slidePill($('#opts'), '.opt', '.opt.on')(order.map((i) => {
       const code = cur.z.combos[i], q = SP.parse(code), ids = SP.ids(code);
       const dots = [...ids.filter((x) => x[0] === 'g'), 'e', ...ids.filter((x) => x[0] === 'r')].map((id) => `<i style="background:${id === 'e' ? CONFIG.evergreenHex : C.toHex(S.chips[id])}"></i>`).join('');
       const lead = cur.z.lead ? (cur.z.lead === 'grounded' ? 'Grounded-led' : 'Ripe-led') : 'Balanced';
       return `<button class="opt${i === cur.pick ? ' on' : ''}" data-action="layout" data-v="${i}" role="radio" aria-checked="${i === cur.pick}">
         <small>${lead}</small><span class="dots">${dots}</span><b>${SP.label(code)}</b>${q.recommended ? '' : '<span class="nr">Not recommended</span>'}</button>`;
-    }).join('');
+    }).join(''));
   }
 
   function renderStep2() {
@@ -300,8 +306,6 @@
     $('#lo').textContent = terr.slider[0]; $('#hi').textContent = terr.slider[1];
     ui.int.set(S.t[S.active]);
     drawField();
-    if (ui.nmFor !== S.active) { $('#nm').value = S.names[S.active] || ''; ui.nmFor = S.active; }
-    $('#nm').placeholder = `Name this ${terr.label} (optional)`;
 
     const ev = E.evaluate(cur.chipItems.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
     $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
@@ -393,11 +397,19 @@
     }).join('')).join('');
     $('#apply').className = dense ? 'dense' : '';
     $('#apply').innerHTML = hd('Apply', 'How to use these colors') + `
-      <div class="abs" style="top:74px;display:flex;flex-direction:column;gap:${dense ? 6 : 14}px;padding:0 3px">${rows}</div>
-      <div class="abs" style="top:${dense ? 281 : 291}px"><div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
-        <div class="legend" style="margin-top:11px"><span>${ICON.check} Body text</span><span><b style="font-weight:400">L</b> Large text only</span><span>${ICON.cross} Avoid</span><br>Columns: type color</div></div>
-      <div class="abs sh" style="top:514px"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
-      <div class="abs sh" style="top:564px"><p>Want to archive this color palette?</p><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>`;
+      <div class="abs stack4" style="top:74px">
+        <div class="rows4" style="gap:${dense ? 8 : 14}px">${rows}</div>
+        <div class="mxwrap"><div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
+          <div class="legend" style="margin-top:11px"><span>${ICON.check} Body text</span><span><b style="font-weight:400">L</b> Large text only</span><span>${ICON.cross} Avoid</span><br>Columns: type color</div></div>
+      </div>
+      <div class="abs bot">
+        <div class="sh"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
+        <div class="sh"><p>Want to archive this color palette?</p><div class="inp"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row" style="margin-top:0"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
+      </div>`;
+    // never let the top part run into Share / Archive: grow the (scrolling) panel body when it would
+    el.body.style.minHeight = '';
+    const need = 74 + $('.stack4').offsetHeight + 20 + $('.bot').offsetHeight + 24;
+    el.body.style.minHeight = need > el.body.clientHeight ? need + 'px' : '';
   }
 
   /* ---------- about, library ---------- */
@@ -431,7 +443,7 @@
   function exportData() {
     const extras = cur.chipItems.map((e) => [e.label, e.hex]);
     return {
-      balance: +S.p.toFixed(3), layout: cur.code, chips: cur.q.chips, recommended: cur.q.recommended,
+      name: S.pname || undefined, balance: +S.p.toFixed(3), layout: cur.code, chips: cur.q.chips, recommended: cur.q.recommended,
       colors: cur.ranked.map((o) => {
         const g = E.guidance(o.hex, o.c);
         return { name: o.label, territory: o.key, role: o.role, anchor: o.anchor, hex: o.hex, rgb: o.spec.rgb, cmykApprox: o.spec.cmyk, oklch: o.spec.oklchText,
@@ -476,7 +488,7 @@
     exitThen(() => { resetAll(); $('#art').dataset.view = 'main'; });
   }
   function resetAll() {
-    S.p = 0.5; S.picks = {}; S.chips = { ...seed }; S.names = {};
+    S.p = 0.5; S.picks = {}; S.chips = { ...seed }; S.pname = '';
     for (const id of CHIP_IDS) S.t[id] = T.intensityOf(terrOf(id), seed[id]);
     S.active = 'r1'; goStep(1);
   }
@@ -503,12 +515,13 @@
     else if (a === 'copy-link') { writeHash(); copy(location.href, 'Link copied'); }
     else if (a === 'lib-add') addToLibrary();
     else if (a === 'lib-show') setView('library');
-    else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, names: it.names }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
+    else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, name: it.name }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
     else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderLibrary(); }
     else if (a === 'test-hex') testHex();
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
   });
+  document.addEventListener('input', (e) => { if (e.target.id === 'pname') { S.pname = e.target.value.trim().slice(0, 28); writeHash(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.busy && S.view !== 'main' && S.view !== 'intro') setView('main'); });
 
   addEventListener('resize', () => { if (cur) renderStage(); });
@@ -527,5 +540,6 @@
     M.runIntro(art, $('#intro'), () => { /* ready */ });
     art.addEventListener('click', () => { if (art.dataset.view === 'intro') M.skip(); });
   }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { shown = 0; fullRender(); }); // tab widths depend on the fonts
   window.SGApp = { state: S, snapshot: () => cur, exportData, loadLib, goStep };
 })();
