@@ -18,11 +18,11 @@
   --font: "GT America", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-cn: "GT America Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --track: -0.03em;
-  --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-edges: cubic-bezier(.65,0,.12,1);
+  --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-edges: cubic-bezier(.72,0,.28,1);
   --stage-max-h: 760px;   /* tallest the three color blocks get */
   --stage-margin-y: 50px; /* space above and below the blocks */
   --t-pill: 380ms; --t-title: 350ms;
-  --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 800ms; --t-collapse: 450ms; --t-blocks: 500ms;
+  --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 1200ms; --t-collapse: 450ms; --t-blocks: 500ms;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 /* letter-spacing in em is turned into pixels where it is declared and then INHERITED as pixels, so setting it once on body gave every size the same -0.48px. Declaring it on every element makes it proportional (-3% of each element's own size). */
@@ -219,6 +219,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 /* the photos stay fully opaque; a white panel fades in over them (a dissolve to white, not a see-through overlap) */
 .icover { position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -210px 0 0 -210px; background: #fff; opacity: 0; transition: opacity var(--t-collapse) var(--ease-io); }
 #art.i-collapse .icover { opacity: 1; }
+#art.i-blocks #intro { display: none; } /* the intro layer (and its white panel) must not sit over the color blocks */
 #art[data-view="intro"] .panel { transition: none; }
 
 @media (prefers-reduced-motion: reduce) { :root { --t-panel: 1ms; --t-block: 1ms; --t-skew: 1ms; --t-fade: 1ms; } }

@@ -13,7 +13,7 @@
     fade: 220,        // small content swaps
     intro: {
       mono: 700,      // "sg" monogram shows alone
-      toEdges: 800,   // s and g travel to the screen edges
+      toEdges: 1200,   // s and g travel to the screen edges
       stack: 130,     // gap between photos stacking up at the center
       hold: 450,      // pause with the full stack
       collapse: 550,  // white dissolves over the photos
