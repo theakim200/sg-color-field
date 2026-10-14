@@ -269,3 +269,10 @@ html, body { touch-action: manipulation; }
 #art.mobile .lib { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 14px; }
 #art.mobile .lib .hov { display: grid; top: auto; bottom: 6px; margin: 0 0 0 -23px; }
 #art.mobile .toast { top: 60px; bottom: auto; }
+
+/* mobile fixes (all scoped to #art.mobile; desktop is untouched) */
+#art.mobile .icover { width: 280px; height: 300px; margin: -150px 0 0 -140px; } /* the white panel must not reach the s / g at the screen edges */
+#art.mobile .panel .body { padding-bottom: 6px; }                              /* underlines at the very end of the scroll are not clipped */
+#art.mobile .about { padding-bottom: 8px; }                                    /* nor the descenders of the last line */
+#art.mobile .pname input { transform: none; }                                  /* the 2px nudge pushed the field's edge under the scroll clip */
+#art.mobile .apply-body, #art.mobile .rows4, #art.mobile .mxwrap, #art.mobile .legend { width: 100%; } /* color info and the table fill both sides */

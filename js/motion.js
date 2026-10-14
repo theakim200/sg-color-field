@@ -57,10 +57,16 @@
     t += T.title + T.titleHold;
     at(t, () => art.classList.remove('i-title'));
     t += T.title;
-    at(t, () => art.classList.add('i-blocks'));                         // 3. then the three color blocks
-    t += T.blocks + T.panelDelay;
-    at(t, () => { art.dataset.view = 'main'; });                        // 4. then the panel, stage and g re-center
-    at(t + M.panel, finish);
+    if (art.classList.contains('mobile')) {
+      // phone: the blocks fade in while s and g rise to the top and the sheet slides up, all at once
+      at(t, () => { art.classList.add('i-blocks'); art.dataset.view = 'main'; });
+      at(t + Math.max(T.blocks, M.panel), finish);
+    } else {
+      at(t, () => art.classList.add('i-blocks'));                       // 3. then the three color blocks
+      t += T.blocks + T.panelDelay;
+      at(t, () => { art.dataset.view = 'main'; });                      // 4. then the panel, stage and g re-center
+      at(t + M.panel, finish);
+    }
     M.skip = finish;
   };
   SG.motion = M;
