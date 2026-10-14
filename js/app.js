@@ -239,6 +239,7 @@
     el.stepper.innerHTML = [1, 2, 3, 4].map((n) => `${n > 1 ? `<hr class="${n <= S.step ? 'on' : ''}">` : ''}<li class="${n <= S.step ? 'on' : ''}"><button data-action="step" data-v="${n}" aria-label="Step ${n}" ${n === S.step ? 'aria-current="step"' : ''}>${n}</button></li>`).join('');
   }
   function renderFoot() {
+    if (S.step !== 4) $('#bottom-extra').innerHTML = '';
     const q = '<button class="btn btn-black q" data-action="about" aria-label="About this tool">' + ICON.q + '</button>';
     el.foot.innerHTML = S.step === 1
       ? `<button class="btn btn-black w250" data-action="next">Next</button>${q}`
@@ -248,28 +249,36 @@
 
   function buildStep() {
     ui = {};
-    const w = document.createElement('div'); w.className = 'sw';
+    const w = document.createElement('div'); w.className = 'sw s' + S.step;
     if (S.step === 1) {
       w.innerHTML = hd('Choose an expression', 'Slide between Grounded and Ripe') + `
-        <div class="abs" style="top:79px"><div class="axis"><span>Grounded</span><i><b></b></i><span>Ripe</span></div>
-          <div class="track big" id="bal" style="margin-top:8px"><span class="knob"></span></div></div>
-        <div class="abs opts" id="opts" style="top:143px"><span class="pill"></span></div>`;
+        <div class="stack gap17">
+          <div class="stack gap8"><div class="axis"><span>Grounded</span><i><b></b></i><span>Ripe</span></div><div class="track big" id="bal"><span class="knob"></span></div></div>
+          <div class="opts" id="opts"><span class="pill"></span></div>
+        </div>`;
     } else if (S.step === 2) {
       w.innerHTML = hd('Explore color', '') + `
-        <div class="abs tabs" id="tabs" style="top:73px"><span class="pill"></span></div>
-        <div class="abs fieldbox" id="fieldbox" style="top:113px" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
-          <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
-        <div class="abs axis" style="top:279px"><span id="lo"></span><i><b></b></i><span id="hi"></span></div>
-        <div class="abs track small" id="int" style="top:304px"><span class="knob"></span></div>
-        <div class="abs inp" style="top:331px"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
-        <div class="abs res" id="res" style="top:382px"></div>`;
+        <div class="stack gap13 center">
+          <div class="tabs" id="tabs"><span class="pill"></span></div>
+          <div class="stack gap18">
+            <div class="stack gap12">
+              <div class="stack gap9">
+                <div class="fieldbox" id="fieldbox" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
+                  <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
+                <div class="axis"><span id="lo"></span><i><b></b></i><span id="hi"></span></div>
+                <div class="track small" id="int"><span class="knob"></span></div>
+              </div>
+              <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
+            </div>
+            <div class="res" id="res"></div>
+          </div>
+        </div>`;
     } else if (S.step === 3) {
-      w.innerHTML = hd('Explore counterparts', '') + `<div class="abs tabs" id="tabs" style="top:74px"><span class="pill"></span></div><div class="abs" id="cp" style="top:114px"></div>`;
+      w.innerHTML = `<div class="stack gap35 center">${hd('Explore counterparts', '')}<div class="stack gap13 center"><div class="tabs" id="tabs"><span class="pill"></span></div><div id="cp"></div></div></div><div id="reset"></div>`;
     } else {
-      w.innerHTML = '<div id="apply"></div>';
+      w.innerHTML = '<div class="stack gap35 center" id="apply"></div>';
     }
     el.body.replaceChildren(w);
-    el.body.style.minHeight = '';
     if (S.step === 1) ui.bal = makeSlider($('#bal'), 2, (v) => { S.p = v; schedule(); }, 'Balance between Grounded and Ripe');
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
@@ -393,17 +402,19 @@
     const from = activeKey(), to = from === 'grounded' ? 'ripe' : 'grounded', target = to[0] + '1';
     $('#sub').textContent = cur.hasG && cur.hasR ? `${terrName(to)} counterparts for your ${cur.byId[S.active].label}` : 'Add a counterpart to see suggestions';
     renderTabs();
+    $('#reset').innerHTML = '';
     if (cur.hasG && cur.hasR && !S.picked[S.active]) {
-      $('#cp').innerHTML = `<p class="invite">Choose your ${cur.byId[S.active].label} in Explore color first, then we'll suggest ${terrName(to)} counterparts that work with it and Evergreen.</p><button class="lnk" data-action="step" data-v="2" style="margin-top:8px">Back to Explore color</button>`;
+      $('#cp').innerHTML = `<div class="stack gap8 center"><p class="invite">Choose your ${cur.byId[S.active].label} in Explore color first, then we'll suggest ${terrName(to)} counterparts that work with it and Evergreen.</p><button class="lnk" data-action="step" data-v="2">Back to Explore color</button></div>`;
     } else if (cur.hasG && cur.hasR) {
       S.recs = E.recommend(S.chips[S.active], from, 6);
       $('#cp').innerHTML = `<div class="grid3">${S.recs.map((r, i) => {
         const sp = E.spec(r.color), on = cur.byId[target] && cur.byId[target].hex === sp.hex;
         return `<button class="rec${on ? ' on' : ''}" style="background:${sp.hex}" data-action="rec" data-v="${i}" data-target="${target}" aria-label="${sp.hex}" title="${esc(r.reason)}. Replaces ${esc(cur.labelOf(target))}."></button>`;
-      }).join('')}</div><button class="small-link" data-action="reset-sel" style="margin-top:25px">reset selection</button>`;
+      }).join('')}</div>`;
+      $('#reset').innerHTML = '<button class="small-link" data-action="reset-sel">reset selection</button>';
     } else {
       const other = terrName(to);
-      $('#cp').innerHTML = `<p class="invite">Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</p><button class="lnk" data-action="mix" style="margin-top:8px">Add ${other}</button>`;
+      $('#cp').innerHTML = `<div class="stack gap8 center"><p class="invite">Want a ${other} counterpart? We'll suggest options that work with your color and Evergreen.</p><button class="lnk" data-action="mix">Add ${other}</button></div>`;
     }
   }
 
@@ -411,10 +422,9 @@
   function renderStep4() {
     const order = ['e', 'r1', 'r2', 'g1', 'g2'].filter((id) => cur.byId[id] && pickedOnly(cur.byId[id])).map((id) => ({ ...cur.byId[id], ...cur.roles[id] }));
     const left = cur.chipItems.filter((i) => !i.picked).map((i) => i.label);
-    const dense = order.length >= 5;
     const rows = order.map((o) => {
       const s = o.spec, role = o.id === 'e' ? 'Anchor' : ROLE_LABEL[o.role] + (o.label === terrName(o.key) ? '' : ' · ' + terrName(o.key));
-      return `<div class="crow"><span class="sw" style="background:${o.hex}"></span><div><div class="nm">${esc(o.label)}<span>${role}</span></div>
+      return `<div class="crow"><span class="sw" style="background:${o.hex}"></span><div class="stack gap7"><div class="nm">${esc(o.label)}<span>${role}</span></div>
         <div class="vals">${val('', 'HEX', s.hex)}${val('cm', 'CMYK', s.cmyk.join('/'), `cmyk(${s.cmyk.join(', ')})`)}${val('', 'RGB', s.rgb.join(', '), `rgb(${s.rgb.join(', ')})`)}${val('', 'OKLCH', `${(s.oklch.L * 100).toFixed(1)}%/${s.oklch.C.toFixed(3)}/${s.oklch.h.toFixed(0)}`, s.oklchText)}</div></div></div>`;
     }).join('');
     const cols = [['White', CONFIG.whiteHex], ['Ink', CONFIG.inkHex], ['Evergreen', CONFIG.evergreenHex], ...cur.pickedChips.map((c) => [c.label, c.hex])];
@@ -424,21 +434,19 @@
       const r = E.contrastLevel(hex, o.hex), mark = r.level === 'body' ? ICON.check : r.level === 'large' ? 'L' : ICON.cross;
       return `<div class="c lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${esc(n)} on ${esc(o.label)}: ${LEVEL[r.level][0]}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
     }).join('')).join('');
-    $('#apply').className = dense ? 'dense' : '';
     $('#apply').innerHTML = hd('Apply', 'How to use these colors') + `
-      <div class="abs stack4" style="top:74px">
-        <div class="rows4" style="gap:${dense ? 8 : 14}px">${rows}</div>
-        <div class="mxwrap"><div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
-          <div class="legend" style="margin-top:11px"><span>${ICON.check} Body text</span><span><b style="font-weight:400">L</b> Large text only</span><span>${ICON.cross} Avoid</span><br>Columns: type color</div>${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}</div>
-      </div>
-      <div class="abs bot">
-        <div class="sh"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
-        <div class="sh"><p>Want to archive this color palette?</p><div class="inp"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row" style="margin-top:0"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
+      <div class="stack gap20 center apply-body">
+        <div class="stack gap15 rows4">${rows}</div>
+        <div class="stack gap13 mxwrap">
+          <div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
+          <div class="legend"><span>${ICON.check} Body text</span><span><b>L</b> Large text only</span><span>${ICON.cross} Avoid</span><span>Columns: type color</span></div>
+          ${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}
+        </div>
       </div>`;
-    // never let the top part run into Share / Archive: grow the (scrolling) panel body when it would
-    el.body.style.minHeight = '';
-    const need = 74 + $('.stack4').offsetHeight + 20 + $('.bot').offsetHeight + 24;
-    el.body.style.minHeight = need > el.body.clientHeight ? need + 'px' : '';
+    $('#bottom-extra').innerHTML = `<div class="stack gap15 share">
+        <div class="stack gap3"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
+        <div class="stack gap3"><p>Want to archive this color palette?</p><div class="inp pname"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
+      </div>`;
   }
 
   /* ---------- about, library ---------- */
