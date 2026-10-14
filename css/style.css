@@ -50,7 +50,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 
 /* ---------- stage (height and top are set from script: viewport height minus 100px, at most 760px) ---------- */
 #stage { position: absolute; width: var(--sw); left: calc(var(--pl) / 2 + 1.5px); margin-left: calc(var(--sw) / -2); transition: left var(--t-panel) var(--ease), opacity var(--t-blocks) var(--ease), transform var(--t-blocks) var(--ease); }
-#art[data-view="intro"] #stage { opacity: 0; transform: scale(.94); pointer-events: none; }
+#art[data-view="intro"] #stage { opacity: 0; transform: scale(.99); pointer-events: none; }
 #art.i-blocks #stage { opacity: 1; transform: none; }
 /* Color blocks. Technique read from the símon.com source: each block sits in a wrapper with its own CSS perspective
    (30vh, origin 50% 50%); the face inside rotates with rotateY/rotateX, the pivot (transform-origin) eases to the pointer,
@@ -216,7 +216,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 #intro { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 #intro img { position: absolute; display: block; opacity: 0; transform: scale(.96); object-fit: cover; transition: opacity 120ms linear, transform 260ms var(--ease); }
 #intro img.on { opacity: 1; transform: none; }
-#art.i-collapse #intro img { opacity: 0; transform: scale(.9); transition-duration: var(--t-collapse); }
+/* the photos cut straight to white (no fade, no scale) */
+#art.i-collapse #intro img { opacity: 0; transform: none; transition: none; }
 #art[data-view="intro"] .panel { transition: none; }
 
 @media (prefers-reduced-motion: reduce) { :root { --t-panel: 1ms; --t-block: 1ms; --t-skew: 1ms; --t-fade: 1ms; } }

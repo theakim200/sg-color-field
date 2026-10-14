@@ -16,7 +16,7 @@
       toEdges: 800,   // s and g travel to the screen edges
       stack: 130,     // gap between photos stacking up at the center
       hold: 450,      // pause with the full stack
-      collapse: 450,  // photos leave
+      collapse: 200,  // beat of plain white after the photos cut away
       title: 350,     // "color farm" fades in and out
       titleHold: 800, // and stays this long
       blocks: 500,    // the three color blocks arrive once the photos are gone
