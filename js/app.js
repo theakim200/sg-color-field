@@ -138,7 +138,7 @@
   function buildStage() {
     STAGE_ORDER.forEach((id) => {
       const b = document.createElement('div'); b.className = 'blk gone'; b.dataset.id = id; b.dataset.action = 'chip'; b.dataset.v = id;
-      b.innerHTML = '<div class="face"><span class="lab"></span><span class="hint">Not chosen yet</span></div>'; $('#stage').appendChild(b); blocks[id] = b;
+      b.innerHTML = '<div class="face"><span class="lab"></span></div>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
   function sizeStage() { // full viewport height minus 50px top and bottom, at most 760px

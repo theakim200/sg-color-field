@@ -25,9 +25,11 @@
   --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 800ms; --t-collapse: 450ms; --t-blocks: 500ms;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+/* letter-spacing in em is turned into pixels where it is declared and then INHERITED as pixels, so setting it once on body gave every size the same -0.48px. Declaring it on every element makes it proportional (-3% of each element's own size). */
+* { letter-spacing: var(--track); }
 html, body { height: 100%; background: #fff; overflow: hidden; }
-body { font-family: var(--font); color: var(--ink); letter-spacing: var(--track); -webkit-font-smoothing: antialiased; }
-button, input { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; outline: 0; }
+body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; background: none; border: 0; outline: 0; }
 button { cursor: pointer; }
 button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); outline-offset: 2px; }
 p { line-height: .88; }
@@ -57,20 +59,18 @@ p { line-height: .88; }
 .blk { position: absolute; left: 0; width: 100%; perspective: 30vh; perspective-origin: 50% 50%;
   transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), opacity var(--t-block) var(--ease), transform .3s; }
 .blk .face { position: absolute; inset: 0; border-radius: 46.773px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-  font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: 0;
+  font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: -0.02em;
   transform-origin: 50% 50%; will-change: transform; transition: background-color var(--t-fade) linear, color var(--t-fade) linear, box-shadow .5s, transform-origin .3s; }
 .blk.gone { opacity: 0; pointer-events: none; }
 .blk[data-id="e"] { cursor: default; }
 .blk:not([data-id="e"]):active { transform: scale(.95); transition-duration: var(--t-block), var(--t-block), var(--t-block), .1s; }
 .blk.hot .face { box-shadow: 0 .5rem 2rem -.15rem rgba(0,0,0,.2); }
 .blk.hot:active .face { box-shadow: 0 .25rem 1rem -.2rem rgba(0,0,0,.1); }
-.blk.sel { z-index: 3; } .blk.sel .face { font-style: italic; }
+.blk { z-index: 1; } .blk[data-id="e"] { z-index: 0; } /* Ripe and Grounded always sit in front of Evergreen */
+.blk.hot, .blk.sel { z-index: 3; }
 .blk .lab { display: block; padding: 0 20px; }
-.blk .hint { display: none; font-family: var(--font); font-weight: 400; font-style: normal; font-size: 12px; line-height: 12px; letter-spacing: var(--track); text-transform: none; margin-top: 10px; }
-/* not chosen yet: an empty slot, in the same grays as the inactive step circles and the panel */
-.blk.blank .face { background: #f3f3f3; color: #b4b4b4; box-shadow: inset 0 0 0 2px #dedede; }
-.blk.blank .hint { display: block; color: #b4b4b4; }
-.blk.blank.hot .face { box-shadow: inset 0 0 0 2px #cfcfcf, 0 .5rem 2rem -.15rem rgba(0,0,0,.2); }
+/* not chosen yet: panel gray with inactive-step gray type */
+.blk.blank .face { background: #eee; color: #c1c1c1; }
 
 /* ---------- panels: full height between the 25px margins ---------- */
 .panel { position: absolute; top: 25px; bottom: 25px; width: 332px; right: -380px; background: var(--panel); border-radius: 23px; transition: right var(--t-panel) var(--ease); z-index: 3; }
@@ -133,7 +133,7 @@ p { line-height: .88; }
 .fieldbox { position: relative; height: 157px; border-radius: 14px; background: #e3e3e3; overflow: hidden; touch-action: none; cursor: crosshair; }
 .fieldbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mkr { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 1.5px solid #fff; pointer-events: none; box-shadow: 0 0 0 .5px rgba(0,0,0,.18); transition: left 90ms linear, top 90ms linear; }
-.mkr.ev em { position: absolute; left: 50%; top: 17px; transform: translateX(-50%); background: #fff; border-radius: 5px; font: normal 6px/10px var(--font); letter-spacing: 0; padding: 0 5px; height: 10px; text-transform: uppercase; color: #000; }
+.mkr.ev em { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); background: #fff; border-radius: 7px; font: normal 10px/14px var(--font); letter-spacing: var(--track); padding: 0 6px; height: 14px; text-transform: uppercase; color: #000; white-space: nowrap; }
 .inp { position: relative; height: 31px; }
 .inp input { width: 100%; height: 31px; border-radius: 16px; background: #fafafa; padding: 0 11px; font-size: 14px; }
 .inp input::placeholder { color: #aaa; opacity: 1; }
@@ -213,7 +213,7 @@ p { line-height: .88; }
 .abs.bot { top: auto; bottom: 24px; display: flex; flex-direction: column; gap: 14px; }
 .bot .inp, .bot .inp input { height: 28px; } .bot .inp { margin: 6px 0; } .bot .inp input { border-radius: 14px; font-size: 14px; }
 /* intro title */
-.ititle { position: absolute; left: 0; right: 0; top: 50%; margin-top: -13px; text-align: center; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: 26px; letter-spacing: 0; text-transform: uppercase; opacity: 0; transition: opacity var(--t-title) linear; }
+.ititle { position: absolute; left: 0; right: 0; top: 50%; margin-top: -13px; text-align: center; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: 26px; letter-spacing: -0.02em; text-transform: uppercase; opacity: 0; transition: opacity var(--t-title) linear; }
 #art.i-title .ititle { opacity: 1; }
 .rows4 { display: flex; flex-direction: column; padding: 0 3px; } .mxwrap { margin-top: 18px; }
 
