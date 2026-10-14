@@ -76,7 +76,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
   font-family: var(--font); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.25; white-space: normal; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .blk.sel .binfo { opacity: 1; } .blk .binfo:empty { display: none; }
 .binfo .bi-aas { display: flex; gap: 14px; font-family: var(--font-cn); font-weight: 700; font-size: 26px; line-height: .9; }
-.binfo .bi-aa.fail { opacity: .35; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.binfo .bi-aa.fail { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .binfo .bi-tg { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .binfo .bi-pill { font-size: 12px; padding: 4px 11px; border-radius: 999px; background: rgb(255 255 255 / 80%); color: #111; }
 .binfo .bi-pill.warn { background: #f4e7c6; color: #8a6a1c; } .binfo .bi-pill.info { background: #cfe2ea; color: #2f6580; } .binfo .bi-pill.bad { background: #f3c3b6; color: #b3261e; } .binfo .bi-pill.good { background: #d4efd6; color: #1c6b2a; }
