@@ -1,4 +1,4 @@
-# Sweetgreen Color Field
+# sweetgreen color farm
 
 A tool for exploring new color without leaving the Sweetgreen world.
 **Grounded ← Evergreen → Ripe.** Evergreen is the constant; Grounded and Ripe are explorable territories.
@@ -25,7 +25,7 @@ Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v
 
 ## Look
 From the design: white page, `#eee` panel (radius 23), black/gray buttons (radius 13), `#c1c1c1` inactive steps, `#767676` secondary text. Letter-spacing is normalized to -3% (the design mixes 3.3% and 4%). Evergreen is `#00A810`.
-Type: GT America Standard Regular for text; GT America Condensed Bold for color names, "Aa", step numbers and the intro title. See `fonts/README.md` (trial files stay out of git).
+Type: GT America Standard Regular for text; GT America Condensed Bold for color names, "Aa", step numbers and the intro title (WOFF2 files in `fonts/`, see `fonts/README.md`).
 
 Spacing is flex + gap, mirroring the Figma auto layout (read from the frames, not measured from screenshots): `.panel .in` is a column with space-between (`.body` on top, `.bottom` with the buttons under it); steps are `.stack` columns whose gap comes from a `.gapN` class (value in px). No absolute positioning is used for content (only for overlays: the sliding pill, field marker, Check button).
 

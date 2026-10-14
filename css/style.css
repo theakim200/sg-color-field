@@ -1,9 +1,9 @@
 /* Sweetgreen Color Field, v5. Built from the Figma frames (1440 x 810 artboard, scaled to fit).
    Fonts: GT America Standard Regular for text, GT America Condensed for color names, "Aa" and step numbers.
    Letter-spacing is -3% everywhere (the design mixes 3.3% and 4%; normalized). */
-@font-face { font-family: "GT America"; src: url("../fonts/GTAmerica-Standard-Regular-Trial.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
-/* Condensed Bold ("Cn_Bd" in the design). There is no Condensed italic file, so the browser synthesizes the italic. */
-@font-face { font-family: "GT America Condensed"; src: url("../fonts/GTAmerica-Condensed-Bold-Trial.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "GT America"; src: url("../fonts/GTAmerica-Standard-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+/* Condensed Bold ("Cn_Bd" in the design). There is no Condensed italic file, so the browser synthesizes an italic if one is ever requested. */
+@font-face { font-family: "GT America Condensed"; src: url("../fonts/GTAmerica-Condensed-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 
 :root {
   --ev: #00A810;
