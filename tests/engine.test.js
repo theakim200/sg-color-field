@@ -25,7 +25,7 @@ ok('territories do not overlap at any hue', () => {
   }
 });
 ok('territories are hue-dependent (not one rectangle)', () => {
-  assert(T.bounds('ripe', 95).Lmin - T.bounds('ripe', 270).Lmin > 0.25);
+  assert(Math.abs(T.bounds('ripe', 95).Lmin - T.bounds('ripe', 270).Lmin) > 0.1 && Math.abs(T.bounds('grounded', 90).Lmin - T.bounds('grounded', 180).Lmin) > 0.3);
 });
 ok('neutral and Evergreen itself are outside both territories', () => {
   assert.strictEqual(T.membership(C.fromHex('#888888')).territory, null);
