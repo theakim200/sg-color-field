@@ -51,16 +51,26 @@ p { line-height: .88; }
 #stage { position: absolute; width: var(--sw); left: calc(var(--pl) / 2 + 1.5px); margin-left: calc(var(--sw) / -2); transition: left var(--t-panel) var(--ease), opacity var(--t-blocks) var(--ease), transform var(--t-blocks) var(--ease); }
 #art[data-view="intro"] #stage { opacity: 0; transform: scale(.94); pointer-events: none; }
 #art.i-blocks #stage { opacity: 1; transform: none; }
-.blk { position: absolute; left: 0; width: 100%; border-radius: 46.773px; display: grid; place-items: center; text-align: center; overflow: visible;
+/* Color blocks. Technique read from the símon.com source: each block sits in a wrapper with its own CSS perspective
+   (30vh, origin 50% 50%); the face inside rotates with rotateY/rotateX, the pivot (transform-origin) eases to the pointer,
+   an "active" block gets a soft drop shadow, and pressing squeezes the wrapper to .95. */
+.blk { position: absolute; left: 0; width: 100%; perspective: 30vh; perspective-origin: 50% 50%;
+  transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), opacity var(--t-block) var(--ease), transform .3s; }
+.blk .face { position: absolute; inset: 0; border-radius: 46.773px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
   font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: 0;
-  transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), background-color var(--t-fade) linear, opacity var(--t-block) var(--ease); }
-.blk[data-id="e"] { cursor: default; }
+  transform-origin: 50% 50%; will-change: transform; transition: background-color var(--t-fade) linear, color var(--t-fade) linear, box-shadow .5s, transform-origin .3s; }
 .blk.gone { opacity: 0; pointer-events: none; }
-.blk { will-change: transform; transform-origin: 50% 50%; }
-.blk::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--ga, 0); background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.9), rgba(255,255,255,0) 58%); mix-blend-mode: soft-light; }
-.blk.sel { font-style: italic; z-index: 3; } /* tilt, lift, shadow and highlight are driven by the pointer in app.js */
+.blk[data-id="e"] { cursor: default; }
+.blk:not([data-id="e"]):active { transform: scale(.95); transition-duration: var(--t-block), var(--t-block), var(--t-block), .1s; }
+.blk.hot .face { box-shadow: 0 .5rem 2rem -.15rem rgba(0,0,0,.2); }
+.blk.hot:active .face { box-shadow: 0 .25rem 1rem -.2rem rgba(0,0,0,.1); }
+.blk.sel { z-index: 3; } .blk.sel .face { font-style: italic; }
 .blk .lab { display: block; padding: 0 20px; }
-.blk .lab em { font-style: inherit; }
+.blk .hint { display: none; font-family: var(--font); font-weight: 400; font-style: normal; font-size: 12px; line-height: 12px; letter-spacing: var(--track); text-transform: none; margin-top: 10px; }
+/* not chosen yet: an empty slot, in the same grays as the inactive step circles and the panel */
+.blk.blank .face { background: #f3f3f3; color: #b4b4b4; box-shadow: inset 0 0 0 2px #dedede; }
+.blk.blank .hint { display: block; color: #b4b4b4; }
+.blk.blank.hot .face { box-shadow: inset 0 0 0 2px #cfcfcf, 0 .5rem 2rem -.15rem rgba(0,0,0,.2); }
 
 /* ---------- panels: full height between the 25px margins ---------- */
 .panel { position: absolute; top: 25px; bottom: 25px; width: 332px; right: -380px; background: var(--panel); border-radius: 23px; transition: right var(--t-panel) var(--ease); z-index: 3; }
@@ -207,5 +217,3 @@ p { line-height: .88; }
 #art.i-title .ititle { opacity: 1; }
 .rows4 { display: flex; flex-direction: column; padding: 0 3px; } .mxwrap { margin-top: 18px; }
 
-/* not chosen yet: hatched, like the "does not apply" cells in the type matrix */
-.blk.blank { background-image: repeating-linear-gradient(45deg, #e9e9ed 0 6px, #f6f6f8 6px 12px); color: #a9a9b0; }

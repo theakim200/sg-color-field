@@ -138,7 +138,7 @@
   function buildStage() {
     STAGE_ORDER.forEach((id) => {
       const b = document.createElement('div'); b.className = 'blk gone'; b.dataset.id = id; b.dataset.action = 'chip'; b.dataset.v = id;
-      b.innerHTML = '<span class="lab"></span>'; $('#stage').appendChild(b); blocks[id] = b;
+      b.innerHTML = '<div class="face"><span class="lab"></span><span class="hint">Not chosen yet</span></div>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
   function sizeStage() { // full viewport height minus 50px top and bottom, at most 760px
@@ -162,19 +162,20 @@
       b.classList.remove('gone'); b.style.top = y + 'px'; b.style.height = h + 'px'; y += h;
       const blank = id !== 'e' && !it.picked;
       b.classList.toggle('blank', blank);
-      b.style.backgroundColor = blank ? '' : it.hex; b.style.color = blank ? '' : labelColor(it.hex);
+      const face = b.firstChild;
+      face.style.backgroundColor = blank ? '' : it.hex; face.style.color = blank ? '' : labelColor(it.hex);
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);
       b.setAttribute('aria-label', blank ? `${it.label}, not chosen yet` : `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
-      b.firstChild.textContent = it.label;
+      $('.lab', b).textContent = it.label;
     });
     kickTilt();
   }
 
   /* ---------- color blocks in 3D ----------
-     Every block tilts toward the pointer while it is hovered (like a card under light): it turns to face the pointer,
-     lifts toward the viewer, throws a shadow away from the tilt and catches a soft highlight where the pointer is.
-     The selected block (steps 2 and 3) keeps facing the pointer wherever it is on the screen.
-     Numbers are in M.tilt (js/motion.js). */
+     Same technique as the símon.com labels (read from its CSS): the wrapper (.blk) carries the perspective, the face rotates
+     with rotateX / rotateY toward the pointer, the pivot eases to the pointer position, and a hovered (or selected) block
+     gets a soft shadow. The selected block (steps 2 and 3) also keeps facing the pointer anywhere on the screen.
+     Evergreen is flat: no tilt, no shadow, no press. Numbers are in M.tilt (js/motion.js). */
   const mouse = { x: null, y: null }, pose = {};
   let tiltRaf = 0;
   const kickTilt = () => { if (!tiltRaf) tiltRaf = requestAnimationFrame(tickTilt); };
@@ -183,30 +184,25 @@
     const K = M.tilt, st = $('#stage').getBoundingClientRect(), calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let busy = false;
     STAGE_ORDER.forEach((id) => {
-      const b = blocks[id], sel = b.classList.contains('sel'), gone = b.classList.contains('gone');
-      const p = pose[id] || (pose[id] = { rx: 0, ry: 0, lift: 0, sel: 0, gx: 50, gy: 50 });
+      const b = blocks[id], face = b.firstChild, sel = b.classList.contains('sel'), gone = b.classList.contains('gone');
+      const p = pose[id] || (pose[id] = { rx: 0, ry: 0 });
+      if (id === 'e') { face.style.transform = ''; b.classList.remove('hot'); return; }
       const w = st.width, h = b.offsetHeight, left = st.left, top = st.top + b.offsetTop, cx = left + w / 2, cy = top + h / 2;
       const over = !gone && mouse.x !== null && mouse.x >= left && mouse.x <= left + w && mouse.y >= top && mouse.y <= top + h;
-      let trx = 0, try_ = 0, tl = 0, gx = p.gx, gy = p.gy;
-      if (over) { // local: the point under the pointer
+      let trx = 0, try_ = 0, origin = '50% 50%';
+      if (over) {
         const nx = (mouse.x - left) / w, ny = (mouse.y - top) / h;
-        try_ = (nx - 0.5) * 2 * K.ry; trx = -(ny - 0.5) * 2 * K.rx; tl = 1; gx = nx * 100; gy = ny * 100;
-      } else if (sel) { // global: face the pointer wherever it is
+        try_ = (nx - 0.5) * 2 * K.ry; trx = -(ny - 0.5) * 2 * K.rx; origin = `${(nx * 100).toFixed(1)}% ${(ny * 100).toFixed(1)}%`;
+      } else if (sel) {
         const nx = mouse.x === null ? 0.5 : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ny = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1);
-        try_ = nx * K.ry; trx = -ny * K.rx; gx = 50 + nx * 40; gy = 50 + ny * 40;
+        try_ = nx * K.ry; trx = -ny * K.rx;
       }
-      const ts = sel ? 1 : 0, f = calm ? 1 : K.follow, e = calm ? 1 : K.enter;
-      const d = Math.abs(trx - p.rx) + Math.abs(try_ - p.ry) + Math.abs(tl - p.lift) + Math.abs(ts - p.sel);
-      p.rx += (trx - p.rx) * f; p.ry += (try_ - p.ry) * f; p.lift += (tl - p.lift) * e; p.sel += (ts - p.sel) * e; p.gx += (gx - p.gx) * f; p.gy += (gy - p.gy) * f;
+      const f = calm ? 1 : K.follow, d = Math.abs(trx - p.rx) + Math.abs(try_ - p.ry);
+      p.rx += (trx - p.rx) * f; p.ry += (try_ - p.ry) * f;
       if (d > 0.01) busy = true;
-      const strength = Math.max(p.lift, p.sel);
-      if (strength < 0.004 && d <= 0.01) { b.style.transform = ''; b.style.boxShadow = ''; b.style.setProperty('--ga', 0); p.rx = p.ry = p.lift = p.sel = 0; return; }
-      const sc = 1 + K.scale * p.lift + K.scale * 0.3 * p.sel;
-      b.style.transform = `perspective(${K.perspective}px) rotateX(${p.rx.toFixed(3)}deg) rotateY(${p.ry.toFixed(3)}deg) translateZ(${(K.lift * p.lift).toFixed(2)}px) scale(${sc.toFixed(4)})`;
-      const S_ = K.shadow, sx = (-p.ry / K.ry) * S_.x, sy = S_.y + (p.rx / K.rx) * S_.x * 0.6, a = S_.alpha * strength;
-      b.style.boxShadow = `${sx.toFixed(1)}px ${sy.toFixed(1)}px ${(S_.blur * strength).toFixed(1)}px rgba(0,0,0,${a.toFixed(3)}), 0 2px ${(8 * strength).toFixed(1)}px rgba(0,0,0,${(a * 0.5).toFixed(3)})`;
-      b.style.setProperty('--gx', p.gx.toFixed(1) + '%'); b.style.setProperty('--gy', p.gy.toFixed(1) + '%'); b.style.setProperty('--ga', (K.glare * strength).toFixed(3));
-      b.style.zIndex = p.lift > 0.05 ? 4 : sel ? 3 : '';
+      b.classList.toggle('hot', over || sel);
+      face.style.transformOrigin = origin;
+      face.style.transform = Math.abs(p.rx) + Math.abs(p.ry) < 0.004 && !over && !sel ? '' : `rotateY(${p.ry.toFixed(3)}deg) rotateX(${p.rx.toFixed(3)}deg)`;
     });
     if (busy) kickTilt();
   }

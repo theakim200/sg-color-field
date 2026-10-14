@@ -9,7 +9,7 @@
     skew: 420,        // selected color block tilting into its pose
     seqGap: 60,       // pause between one panel leaving and the next one entering
     pill: 380,        // the white highlight sliding between tabs / layout options
-    tilt: { follow: 0.16, enter: 0.14, ry: 16, rx: 12, lift: 34, scale: 0.035, perspective: 1100, reachX: 380, reachY: 320, glare: 0.32, shadow: { x: 24, y: 26, blur: 52, alpha: 0.3 } }, // color blocks in 3D
+    tilt: { follow: 0.16, ry: 8, rx: 6, reachX: 380, reachY: 320 }, // color blocks in 3D (perspective, shadow and press are CSS: .blk, 30vh)
     fade: 220,        // small content swaps
     intro: {
       mono: 700,      // "sg" monogram shows alone
