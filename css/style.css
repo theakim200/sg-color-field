@@ -90,6 +90,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .panel .body::-webkit-scrollbar { display: none; }
 .bottom { flex: none; display: flex; flex-direction: column; }
 .share { padding-bottom: 30px; }
+#art.mobile .share { padding-bottom: 8px; align-self: stretch; }
 .foot { flex: none; display: flex; gap: 4px; width: 100%; }
 .stack { display: flex; flex-direction: column; gap: var(--g, 0); }
 .stack.center { align-items: center; }
@@ -232,3 +233,38 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .ititle { position: absolute; left: 0; right: 0; top: 50%; margin-top: -13px; text-align: center; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: 26px; letter-spacing: -0.02em; text-transform: uppercase; opacity: 0; transition: opacity var(--t-title) linear; }
 #art.i-title .ititle { opacity: 1; }
 
+
+/* =====================================================================================================
+   Mobile (phones and small tablets, portrait): class .mobile on #art, set from app.js (isMobile()).
+   Marks on top, the color blocks under them, one bottom sheet below. Everything here is scoped to
+   #art.mobile so the desktop layout is untouched.
+   ===================================================================================================== */
+html, body { touch-action: manipulation; }
+#art.mobile { --pl: calc(100vw + 4px); }            /* g sits 16px from the right edge (g.left = pl - 42) */
+#art.mobile .mk-s { left: 16px; transition: left var(--t-panel) var(--ease), top var(--t-panel) var(--ease); }
+#art.mobile .mk-g { transition: left var(--t-panel) var(--ease), top var(--t-panel) var(--ease); }
+#art.mobile:not([data-view="intro"]) .mk { top: 18px; } /* intro keeps them at the vertical center, then they move to the top */
+#art.mobile.i-mono:not(.i-edges) .mk-s { left: calc(50vw - 23px); }
+#art.mobile.i-mono.i-edges .mk-s { left: 16px; }
+
+#art.mobile #stage { left: 50%; }
+#art.mobile .blk .face { font-size: 24px; }
+
+/* the bottom sheet(s) */
+#art.mobile[data-view] #p-main, #art.mobile[data-view] #p-about, #art.mobile[data-view] #p-lib {
+  left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; height: var(--ph, 60vh);
+  transform: translateY(calc(100% + 24px)); transition: transform var(--t-panel) var(--ease);
+}
+#art.mobile[data-view] #p-lib { height: var(--ph-lib, 86vh); }
+#art.mobile[data-view="main"] #p-main, #art.mobile[data-view="about"] #p-main { transform: none; }
+#art.mobile[data-view="about"] #p-about { transform: none; z-index: 4; }
+#art.mobile[data-view="library"] #p-lib { transform: none; }
+#art.mobile .btn.w123, #art.mobile .btn.w250 { flex: 1; width: auto; }
+#art.mobile input { font-size: 16px; }              /* 16px stops iOS from zooming the page on focus */
+#art.mobile .about { overflow-y: auto; scrollbar-width: none; } #art.mobile .about::-webkit-scrollbar { display: none; }
+
+/* library: 3 columns, and the open / delete buttons are always visible (a finger has no hover) */
+#art.mobile #p-lib .in { padding: 20px; gap: 12px; }
+#art.mobile .lib { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 14px; }
+#art.mobile .lib .hov { display: grid; top: auto; bottom: 6px; margin: 0 0 0 -23px; }
+#art.mobile .toast { top: 60px; bottom: auto; }

@@ -12,6 +12,8 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+  // phones and small tablets in portrait get the bottom-sheet layout (CSS class .mobile on #art); everything else is the desktop layout
+  const MQ = matchMedia('(max-width: 900px) and (min-height: 520px)'), isMobile = () => MQ.matches;
   const FIELD = { w: 360, h: 194, Ltop: 0.97, Lbot: 0.2 };
   const CHIP_IDS = ['g1', 'g2', 'r1', 'r2'];
   const STAGE_ORDER = ['r2', 'r1', 'e', 'g1', 'g2']; // a second Ripe stacks above the first
@@ -145,6 +147,16 @@
     const cs = getComputedStyle(document.documentElement), num = (n, d) => parseFloat(cs.getPropertyValue(n)) || d;
     const maxH = num('--stage-max-h', 760), maxW = num('--stage-max-w', 560), my = num('--stage-margin-y', 50);
     const k0 = num('--stage-scale', 1.07), k1 = num('--stage-scale-large', 1.3), from = num('--stage-scale-from', 1440), to = num('--stage-scale-to', 1920);
+    if (isMobile()) { // phone layout: marks on top, the color blocks under them, one bottom sheet below
+      const M_ = { top: 56, gap: 12, edge: 12 };
+      const sheet = Math.min(Math.round(innerHeight * 0.6), 600);
+      const st = $('#stage'), art = $('#art');
+      STAGE_H = Math.max(150, innerHeight - M_.top - sheet - M_.gap - M_.edge);
+      art.style.setProperty('--sw', Math.min(innerWidth - 2 * M_.edge, 640) + 'px'); art.style.setProperty('--ph', sheet + 'px'); art.style.setProperty('--ph-lib', (innerHeight - M_.top - M_.edge) + 'px');
+      st.style.setProperty('--blk-r', Math.min(30, STAGE_H / 7).toFixed(1) + 'px');
+      st.style.height = STAGE_H + 'px'; st.style.top = M_.top + 'px';
+      return;
+    }
     const baseH = Math.max(320, Math.min(innerHeight - 2 * my, maxH)), baseW = Math.min(innerWidth * 0.3236, maxW);
     const k = k0 + (k1 - k0) * C.clamp((innerWidth - from) / (to - from), 0, 1);
     STAGE_H = Math.max(320, Math.min(baseH * k, innerHeight - 50)); // never taller than the sidebar (25px margin top and bottom)
@@ -201,8 +213,8 @@
         const nx = (mouse.x - left) / w, ny = (mouse.y - top) / h;
         try_ = (nx - 0.5) * 2 * K.ry; trx = -(ny - 0.5) * 2 * K.rx; origin = `${(nx * 100).toFixed(1)}% ${(ny * 100).toFixed(1)}%`;
       } else if (sel) {
-        const nx = mouse.x === null ? 0.5 : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ny = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1);
-        try_ = nx * K.ry; trx = -ny * K.rx;
+        const mob = isMobile(), nx = mouse.x === null ? (mob ? 0 : 0.5) : C.clamp((mouse.x - cx) / K.reachX, -1, 1), ny = mouse.y === null ? 0 : C.clamp((mouse.y - cy) / K.reachY, -1, 1);
+        try_ = nx * K.ry * (mob ? 0.5 : 1); trx = -ny * K.rx * (mob ? 0.5 : 1);
       }
       const f = calm ? 1 : K.follow, d = Math.abs(trx - p.rx) + Math.abs(try_ - p.ry);
       p.rx += (trx - p.rx) * f; p.ry += (try_ - p.ry) * f;
@@ -214,6 +226,7 @@
     if (busy) kickTilt();
   }
   addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; kickTilt(); });
+  ['pointerup', 'pointercancel'].forEach((t) => addEventListener(t, (e) => { if (e.pointerType !== 'mouse') { mouse.x = mouse.y = null; kickTilt(); } })); // a finger has no hover
   document.documentElement.addEventListener('mouseleave', () => { mouse.x = mouse.y = null; kickTilt(); });
   addEventListener('resize', kickTilt);
 
@@ -450,10 +463,11 @@
           ${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}
         </div>
       </div>`;
-    $('#bottom-extra').innerHTML = `<div class="stack gap20 share">
+    const extra = `<div class="stack gap20 share">
         <div class="stack gap5"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
         <div class="stack gap5"><p>Want to archive this color palette?</p><div class="inp pname"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
       </div>`;
+    if (isMobile()) { $('#bottom-extra').innerHTML = ''; $('#apply').insertAdjacentHTML('beforeend', extra); } else $('#bottom-extra').innerHTML = extra; // on a phone Share / Archive scroll with the content
   }
 
   /* ---------- about, library ---------- */
@@ -573,6 +587,8 @@
   /* ---------- init ---------- */
   M.apply(document.documentElement);
   $('#about-text').innerHTML = ABOUT.map((t) => `<p>${t}</p>`).join('');
+  const applyMode = () => { $('#art').classList.toggle('mobile', isMobile()); if (cur) { shown = 0; fullRender(); } };
+  applyMode(); (MQ.addEventListener ? MQ.addEventListener('change', applyMode) : MQ.addListener(applyMode));
   buildStage();
   const fromLink = readHash();
   if (fromLink) S.step = 4;

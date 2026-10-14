@@ -21,6 +21,8 @@ Fluid layout on the full window (margin 25px, gutter 20px, no scrolling). Panels
 
 All motion durations and easings live in `js/motion.js`. They are **placeholders estimated from the start and end frames**, not values from the prototype.
 
+**Mobile** (width up to 900px and height at least 520px, so phones and small tablets in portrait): `#art` gets the class `.mobile` (set in `js/app.js`, `isMobile()`), and everything for it lives in the last block of `css/style.css`, scoped to `#art.mobile`, so the desktop layout is untouched. The s / g marks sit on top, the color blocks under them (height = window - 56px top - sheet - 24px), and one bottom sheet (60% of the window, at most 600px) holds steps 1 to 4. About slides up over it; Library is a taller sheet with 3 columns and always-visible open / delete buttons. Sheets slide up and down instead of sideways; the same exit-then-enter sequencing applies. Step 4's Share / Archive scrolls with the content. Inputs are 16px so iOS does not zoom. Tilt is gentler and ends when the finger lifts.
+
 Earlier layouts are archived in `archive/` (v1 scrolling, v2 iOS four columns, v3 central stage, v4 merged layout), each a single self-contained HTML plus a commit hash.
 
 ## Look
