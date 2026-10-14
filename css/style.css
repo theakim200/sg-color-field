@@ -211,7 +211,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .lib .hov { position: absolute; left: 50%; top: 50%; width: 46px; height: 22px; margin: -11px 0 0 -23px; border-radius: 5px; background: #000; display: none; place-items: center; grid-template-columns: 1fr 1fr; }
 .lib .hov button { width: 23px; height: 22px; display: grid; place-items: center; } .lib .hov svg { width: 12px; height: 12px; }
 .lib .it:hover .hov, .lib .it:focus-within .hov { display: grid; }
-.lib .empty { grid-column: 1 / -1; font-size: 14px; line-height: 1.11; color: var(--gray-3); }
+.lib .empty { grid-column: 1 / -1; padding: 10px 8px; font-size: 14px; line-height: 1.11; color: var(--gray-3); } /* inset so the rounded clip of .lib does not cut the first letters */
 
 .toast { position: absolute; left: 50%; bottom: 8px; transform: translate(-50%, 20px); background: #000; color: #fff; font-size: 12px; line-height: 12px; padding: 9px 14px; border-radius: 13px; opacity: 0; pointer-events: none; transition: opacity .2s linear, transform .2s var(--ease); z-index: 9; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -259,6 +259,7 @@ html, body { touch-action: manipulation; }
 #art.mobile[data-view="main"] #p-main, #art.mobile[data-view="about"] #p-main { transform: none; }
 #art.mobile[data-view="about"] #p-about { transform: none; z-index: 4; }
 #art.mobile[data-view="library"] #p-lib { transform: none; }
+#art.mobile .panel .in { gap: 16px; } /* breathing room between scrolled content and the buttons */
 #art.mobile .btn.w123, #art.mobile .btn.w250 { flex: 1; width: auto; }
 #art.mobile input { font-size: 16px; }              /* 16px stops iOS from zooming the page on focus */
 #art.mobile .about { overflow-y: auto; scrollbar-width: none; } #art.mobile .about::-webkit-scrollbar { display: none; }
