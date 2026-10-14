@@ -68,7 +68,8 @@
   const pickedOnly = (o) => o.id === 'e' || o.picked;
   const markPicked = (id) => { S.picked[id] = true; };
   const DOT_BLANK = '#d4d4d8';
-  const labelColor = (hex) => (C.wcag('#000000', hex) < 3 ? '#fff' : '#000');
+  // same rule as the contrast table (WCAG + APCA), so a block label never disagrees with the table
+  const labelColor = (hex) => E.bestForeground(hex).fg;
   const terrName = (k) => TERRITORIES[k].label;
 
   /* ---------- URL state (shareable; only written on Apply) ---------- */
@@ -140,7 +141,7 @@
   function buildStage() {
     STAGE_ORDER.forEach((id) => {
       const b = document.createElement('div'); b.className = 'blk gone'; b.dataset.id = id; b.dataset.action = 'chip'; b.dataset.v = id;
-      b.innerHTML = '<div class="face"><span class="lab"></span></div>'; $('#stage').appendChild(b); blocks[id] = b;
+      b.innerHTML = '<div class="face"><span class="lab"></span><div class="binfo"></div></div>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
   function sizeStage() {
@@ -165,6 +166,18 @@
     art.style.setProperty('--sw', (baseW * s).toFixed(1) + 'px'); st.style.setProperty('--blk-r', (46.773 * s).toFixed(2) + 'px');
     st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
   }
+  /* The selected block shows how type behaves on it: Aa in white, ink and Evergreen, then one usage tag and one note. */
+  function infoHtml(it) {
+    const g = E.guidance(it.hex, it.c), cfg = CONFIG;
+    const aa = [cfg.whiteHex, cfg.inkHex, cfg.evergreenHex].map((fg) => {
+      const r = E.contrastLevel(fg, it.hex);
+      return `<span class="bi-aa ${r.level}" style="color:${fg}" title="${LEVEL[r.level][0]}">Aa</span>`;
+    }).join('');
+    const use = g.tags.find((t) => !/Evergreen/.test(t.text) && t.tone !== 'good') || g.tags.find((t) => !/Evergreen/.test(t.text));
+    const ev = g.tags.find((t) => /Evergreen/.test(t.text));
+    const note = (g.rel.notes && g.rel.notes[0]) || '';
+    return `<div class="bi-aas">${aa}</div><div class="bi-tg">${[use, ev].filter(Boolean).map((t) => `<span class="bi-pill ${t.tone}">${esc(t.text)}</span>`).join('')}</div>${note ? `<p>${esc(note)}</p>` : ''}`;
+  }
   function renderStage() {
     sizeStage();
     const raw = {}; let sum = 0;
@@ -186,6 +199,7 @@
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);
       b.setAttribute('aria-label', blank ? `${it.label}, not chosen yet` : `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
       $('.lab', b).textContent = it.label;
+      $('.binfo', b).innerHTML = !blank && id !== 'e' && (S.step === 2 || S.step === 3) && S.active === id ? infoHtml(it) : '';
     });
     kickTilt();
   }
