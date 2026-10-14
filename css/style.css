@@ -131,7 +131,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .pill { position: absolute; left: 0; top: 0; width: 0; height: 0; background: #fff; border-radius: 13px; z-index: 0; pointer-events: none; transition: left var(--t-pill) var(--ease), top var(--t-pill) var(--ease), width var(--t-pill) var(--ease), height var(--t-pill) var(--ease), opacity var(--t-fade) linear; }
 .pill.still { transition: none; }
 .opt { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 5px; width: 100%; text-align: left; padding: 10px 10px 12px; border: 1px solid transparent; border-radius: 13px; }
-.opt small { font-size: 12px; line-height: .88; color: var(--gray-3); }
+.opt small { font-size: 12px; line-height: 1.0; color: var(--gray-3); }
 .opt .dots { display: flex; gap: 2px; height: 11px; }
 .opt .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
 .opt b { font-weight: 400; font-size: 18px; line-height: .9; white-space: nowrap; }
