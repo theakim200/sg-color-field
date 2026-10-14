@@ -18,7 +18,7 @@
   --font: "GT America", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-cn: "GT America Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --track: -0.03em;
-  --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-edges: cubic-bezier(.72,0,.28,1);
+  --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-edges: cubic-bezier(.45,0,.1,1);
   --stage-max-h: 760px;   /* tallest the three color blocks get */
   --stage-margin-y: 50px; /* space above and below the blocks */
   --t-pill: 380ms; --t-title: 350ms;

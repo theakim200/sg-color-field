@@ -12,7 +12,7 @@
     tilt: { follow: 0.16, ry: 8, rx: 6, reachX: 380, reachY: 320 }, // color blocks in 3D (perspective, shadow and press are CSS: .blk, 30vh)
     fade: 220,        // small content swaps
     intro: {
-      mono: 700,      // "sg" monogram shows alone
+      mono: 600,      // "sg" monogram shows alone
       toEdges: 1200,   // s and g travel to the screen edges
       stack: 130,     // gap between photos stacking up at the center
       hold: 450,      // pause with the full stack
