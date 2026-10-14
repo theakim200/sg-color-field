@@ -141,10 +141,17 @@
       b.innerHTML = '<div class="face"><span class="lab"></span></div>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
-  function sizeStage() { // full viewport height minus 50px top and bottom, at most 760px
-    const cs = getComputedStyle(document.documentElement), maxH = parseFloat(cs.getPropertyValue('--stage-max-h')) || 760, my = parseFloat(cs.getPropertyValue('--stage-margin-y')) || 50;
-    STAGE_H = Math.max(320, Math.min(innerHeight - 2 * my, maxH));
-    const st = $('#stage'); st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
+  function sizeStage() {
+    const cs = getComputedStyle(document.documentElement), num = (n, d) => parseFloat(cs.getPropertyValue(n)) || d;
+    const maxH = num('--stage-max-h', 760), maxW = num('--stage-max-w', 560), my = num('--stage-margin-y', 50);
+    const k0 = num('--stage-scale', 1.07), k1 = num('--stage-scale-large', 1.3), from = num('--stage-scale-from', 1440), to = num('--stage-scale-to', 1920);
+    const baseH = Math.max(320, Math.min(innerHeight - 2 * my, maxH)), baseW = Math.min(innerWidth * 0.3236, maxW);
+    const k = k0 + (k1 - k0) * C.clamp((innerWidth - from) / (to - from), 0, 1);
+    STAGE_H = Math.max(320, Math.min(baseH * k, innerHeight - 50)); // never taller than the sidebar (25px margin top and bottom)
+    const s = STAGE_H / baseH;                                        // width and corner radius follow the same scale
+    const st = $('#stage'), art = $('#art');
+    art.style.setProperty('--sw', (baseW * s).toFixed(1) + 'px'); st.style.setProperty('--blk-r', (46.773 * s).toFixed(2) + 'px');
+    st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
   }
   function renderStage() {
     sizeStage();

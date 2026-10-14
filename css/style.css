@@ -19,8 +19,11 @@
   --font-cn: "GT America Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --track: -0.03em;
   --ease: cubic-bezier(.22,.8,.24,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-edges: cubic-bezier(.45,0,.1,1);
-  --stage-max-h: 760px;   /* tallest the three color blocks get */
-  --stage-margin-y: 50px; /* space above and below the blocks */
+  /* Color block size. Start from the base size (height = window minus 2 x margin, at most --stage-max-h; width = 32.36vw, at most
+     --stage-max-w), multiply it by a factor that grows with the window width (--stage-scale at 1440px and below, up to
+     --stage-scale-large from 1920px, linear in between), then never let the blocks be taller than the sidebar (window height - 50px). */
+  --stage-max-h: 760px; --stage-max-w: 560px; --stage-margin-y: 50px;
+  --stage-scale: 1.07; --stage-scale-large: 1.3; --stage-scale-from: 1440; --stage-scale-to: 1920;
   --t-pill: 380ms; --t-title: 350ms;
   --t-panel: 650ms; --t-block: 500ms; --t-skew: 420ms; --t-fade: 220ms; --t-edges: 1200ms; --t-collapse: 450ms; --t-blocks: 500ms;
 }
@@ -35,7 +38,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 
 #frame { position: fixed; inset: 0; background: #fff; }
 /* Fluid layout: margin 25px, gutter 20px. --pl is the left edge of the panel area (used to center the stage and place g). */
-#art { position: absolute; inset: 0; overflow: hidden; --pl: calc(100vw - 4px); --sw: min(32.36vw, 560px); /* block width: 32.36% of the window, at most 560px */ }
+#art { position: absolute; inset: 0; overflow: hidden; --pl: calc(100vw - 4px); --sw: min(32.36vw, 560px); /* fallback; the real width is set from script (see sizeStage) */ }
 #art[data-view="main"] { --pl: calc(100vw - 357px); }
 #art[data-view="about"] { --pl: calc(100vw - 709px); }
 #art[data-view="library"] { --pl: calc(100vw - 592px); }
@@ -57,7 +60,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
    an "active" block gets a soft drop shadow, and pressing squeezes the wrapper to .95. */
 .blk { position: absolute; left: 0; width: 100%; perspective: 30vh; perspective-origin: 50% 50%;
   transition: top var(--t-block) var(--ease), height var(--t-block) var(--ease), opacity var(--t-block) var(--ease), transform .3s; }
-.blk .face { position: absolute; inset: 0; border-radius: 46.773px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+.blk .face { position: absolute; inset: 0; border-radius: var(--blk-r, 46.773px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
   font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; text-transform: uppercase; white-space: nowrap; letter-spacing: -0.02em;
   transform-origin: 50% 50%; will-change: transform; transition: background-color var(--t-fade) linear, color var(--t-fade) linear, box-shadow .5s, transform-origin .3s; }
 .blk.gone { opacity: 0; pointer-events: none; }

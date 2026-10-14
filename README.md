@@ -29,7 +29,7 @@ Type: GT America Standard Regular for text; GT America Condensed Bold for color 
 
 Spacing is flex + gap, mirroring the Figma auto layout (read from the frames, not measured from screenshots): `.panel .in` is a column with space-between (`.body` on top, `.bottom` with the buttons under it); steps are `.stack` columns whose gap comes from a `.gapN` class (value in px). No absolute positioning is used for content (only for overlays: the sliding pill, field marker, Check button).
 
-Layout knobs in `css/style.css` (`:root`): `--stage-max-h` (tallest the color blocks get, 760px), `--stage-margin-y` (space above and below them, 50px), `--sw` on `#art` (block width, 32.36vw up to 560px).
+Color block size (knobs in `css/style.css` `:root`, computed in `sizeStage()` in `js/app.js`): base height = window height - 2 x `--stage-margin-y` (50px), at most `--stage-max-h` (760px); base width = 32.36vw, at most `--stage-max-w` (560px). That base size is multiplied by `--stage-scale` (1.07, at 1440px wide and below) growing linearly to `--stage-scale-large` (1.3) at `--stage-scale-to` (1920px). The blocks are never taller than the sidebar (window height - 50px); width and corner radius follow the same scale.
 
 ## Architecture
 | File | Role |
