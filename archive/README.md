@@ -17,3 +17,7 @@ Restore the source with `git checkout e384a4e`.
 ## v4: merged layout (commit `62868ec`)
 `sweetgreen-color-field-v4-merged.html`: left cards (1 expression, 2 explore, 2.5 counterparts), the colors once at the center, Apply on the right, plus About / Library / Technical sheets. Single self-contained file, GT America not embedded.
 Restore the source with `git checkout 62868ec`.
+
+## v5: Figma design, desktop (commit `ede1164`)
+`sweetgreen-color-farm-v5-desktop.html`: the desktop-only version built from the Figma frames (intro, stepper panel, About, Library, 3D color blocks, flex + gap layout). Single self-contained file: CSS, JS, GT America WOFF2 fonts, the s / g marks and the intro photos are embedded.
+Restore the source with `git checkout ede1164`.
