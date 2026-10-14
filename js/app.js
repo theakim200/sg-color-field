@@ -435,7 +435,7 @@
       return `<div class="c lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${esc(n)} on ${esc(o.label)}: ${LEVEL[r.level][0]}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
     }).join('')).join('');
     $('#apply').innerHTML = hd('Apply', 'How to use these colors') + `
-      <div class="stack gap20 center apply-body">
+      <div class="stack gap25 center apply-body">
         <div class="stack gap15 rows4">${rows}</div>
         <div class="stack gap13 mxwrap">
           <div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
@@ -443,9 +443,9 @@
           ${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}
         </div>
       </div>`;
-    $('#bottom-extra').innerHTML = `<div class="stack gap15 share">
-        <div class="stack gap3"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
-        <div class="stack gap3"><p>Want to archive this color palette?</p><div class="inp pname"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
+    $('#bottom-extra').innerHTML = `<div class="stack gap20 share">
+        <div class="stack gap5"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
+        <div class="stack gap5"><p>Want to archive this color palette?</p><div class="inp pname"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
       </div>`;
   }
 
