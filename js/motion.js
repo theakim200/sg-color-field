@@ -16,7 +16,7 @@
       toEdges: 800,   // s and g travel to the screen edges
       stack: 130,     // gap between photos stacking up at the center
       hold: 450,      // pause with the full stack
-      collapse: 200,  // beat of plain white after the photos cut away
+      collapse: 550,  // white dissolves over the photos
       title: 350,     // "color farm" fades in and out
       titleHold: 800, // and stays this long
       blocks: 500,    // the three color blocks arrive once the photos are gone
@@ -37,7 +37,7 @@
     ['e', 115, 171], ['f', 228, 171], ['g', 203, 269], ['h', 157, 220],
   ];
   M.runIntro = function (art, host, done) {
-    host.innerHTML = '<div class="ititle">color farm</div>' + IMGS.map(([f, w, h]) => `<img src="assets/intro/${f}.webp" alt="" style="left:50%;top:50%;margin:${-h / 2}px 0 0 ${-w / 2}px;width:${w}px;height:${h}px">`).join('');
+    host.innerHTML = IMGS.map(([f, w, h]) => `<img src="assets/intro/${f}.webp" alt="" style="left:50%;top:50%;margin:${-h / 2}px 0 0 ${-w / 2}px;width:${w}px;height:${h}px">`).join('') + '<div class="icover"></div><div class="ititle">color farm</div>';
     const imgs = [...host.children].filter((n) => n.tagName === 'IMG'), T = M.intro, timers = [];
     let ended = false;
     const at = (ms, fn) => timers.push(setTimeout(fn, ms));
