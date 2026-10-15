@@ -371,7 +371,7 @@
     renderTabs();
     // gray (no chroma) at this lightness up to the most saturated color the territory allows at this hue
     const cc = S.chips[S.active], top = T.colorAt(key, cc.h, cc.L, 1), stops = Array.from({ length: 9 }, (_, i) => C.toHex(C.fitToGamut({ L: top.L, C: top.C * i / 8, h: top.h })));
-    $('#int').style.background = `linear-gradient(90deg, ${stops.join(', ')})`;
+    $('#int').style.background = S.picked[S.active] ? `linear-gradient(90deg, ${stops.join(', ')})` : 'linear-gradient(90deg, #e6e6e6, #b9b9b9)'; // gray until a color is chosen
     ui.int.set(S.t[S.active]);
     drawField();
 
