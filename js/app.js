@@ -447,7 +447,7 @@
     const id = S.active, key = activeKey(), c = C.fromHex(S.photo[i]), m = T.membership(c);
     const snapped = m.territory === key ? c : T.snapInto(key, c);
     setChip(id, snapped);
-    S.testMsg = ''; S.sugMsg = ''; S.photoMsg = m.territory === key ? '' : `<p>Moved into ${terrName(key)}.</p>`;
+    S.testMsg = ''; S.sugMsg = ''; S.photoMsg = m.territory === key ? '' : `<p class="t">Moved into ${terrName(key)}.</p>`;
     fullRender();
   }
 
@@ -460,7 +460,7 @@
     if (!S.sug || S.sug.sig !== sig) S.sug = { sig, i: -1, ...K.suggest(key, hit.hex) };
     S.sug.i = (S.sug.i + 1) % S.sug.pool.length;
     setChip(id, S.sug.pool[S.sug.i]);
-    S.testMsg = ''; S.sugMsg = ''; S.photoMsg = '';
+    S.testMsg = ''; S.sugMsg = '<p class="t">Press Suggest for another.</p>'; S.photoMsg = '';
     fullRender(); $('#kw').value = word;
   }
 
@@ -474,7 +474,7 @@
     const other = m.territory && cur.ids.some((x) => terrOf(x) === m.territory) ? m.territory : null;
     const where = m.territory ? `That color belongs to ${terrName(m.territory)}.` : 'That color sits outside the Sweetgreen territories.';
     S.pendingSnap = T.snapInto(key, c);
-    S.testMsg = `<p>${where} Nearest ${mine}: <i class="sw-chip" style="background:${C.toHex(S.pendingSnap)}"></i>${C.toHex(S.pendingSnap)}</p>
+    S.testMsg = `<p class="t">${where} Nearest ${mine}: <i class="sw-chip" style="background:${C.toHex(S.pendingSnap)}"></i>${C.toHex(S.pendingSnap)}</p>
       <div class="acts"><button class="lnk" data-action="snap">Use it</button>${other ? `<button class="lnk" data-action="goto" data-v="${other[0]}1" data-hex="${C.toHex(c)}">Use as ${terrName(other)}</button>` : ''}</div>`;
     renderStep2();
   }
