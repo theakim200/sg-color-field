@@ -525,7 +525,7 @@
         </div>
       </div>`;
     const extra = `<div class="stack gap20 share">
-        <div class="stack gap5"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-json">JSON</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
+        <div class="stack gap5"><p>Share this palette</p><div class="row"><button class="lnk" data-action="copy-link">Copy link</button><button class="lnk" data-action="copy-figma">Copy for Figma</button><button class="lnk" data-action="copy-css">CSS variable</button></div></div>
         <div class="stack gap5"><p>Want to archive this color palette?</p><div class="inp pname"><input id="pname" type="text" maxlength="28" placeholder="Name this palette (optional)" value="${esc(S.pname)}" spellcheck="false" autocomplete="off" aria-label="Palette name"></div><div class="row"><button class="lnk" data-action="lib-add">Add to Library</button><button class="lnk" data-action="lib-show">Open Library</button></div></div>
       </div>`;
     if (isMobile()) { $('#bottom-extra').innerHTML = ''; $('#apply').insertAdjacentHTML('beforeend', extra); } else $('#bottom-extra').innerHTML = extra; // on a phone Share / Archive scroll with the content
@@ -570,6 +570,15 @@
           approvedForeground: E.foregrounds(o.hex, extras).filter((f) => f.level !== 'fail').map((f) => ({ fg: f.name, hex: f.fg, use: LEVEL[f.level][0] })) };
       }),
     };
+  }
+  /* SVG of the palette swatches; pasting it on a Figma canvas creates one rounded square per color with its name and HEX. */
+  function exportSvg() {
+    const d = exportData(), S0 = 120, gap = 24, h = S0 + 50, w = d.colors.length * S0 + (d.colors.length - 1) * gap;
+    const items = d.colors.map((c, i) => { const x = i * (S0 + gap);
+      return `  <g id="${esc(c.name)}"><rect x="${x}" y="0" width="${S0}" height="${S0}" rx="14" fill="${c.hex}"/>
+    <text x="${x}" y="${S0 + 22}" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#111111">${esc(c.name)}</text>
+    <text x="${x}" y="${S0 + 40}" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888">${c.hex}</text></g>`; });
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n${items.join('\n')}\n</svg>`;
   }
   function exportCss() {
     const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -631,7 +640,7 @@
     else if (a === 'reset-sel' && S.cpBackup) { Object.assign(S.chips, S.cpBackup.chips); Object.assign(S.t, S.cpBackup.t); Object.assign(S.picked, S.cpBackup.picked); fullRender(); }
     else if (a === 'copy') copy(v);
     else if (a === 'copy-css') copy(exportCss(), 'CSS variables copied');
-    else if (a === 'copy-json') copy(JSON.stringify(exportData(), null, 2), 'JSON copied');
+    else if (a === 'copy-figma') copy(exportSvg(), 'Copied. Paste it into Figma');
     else if (a === 'copy-link') { writeHash(); copy(location.href, 'Link copied'); }
     else if (a === 'lib-add') addToLibrary();
     else if (a === 'lib-show') setView('library');
