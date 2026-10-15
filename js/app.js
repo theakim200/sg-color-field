@@ -640,7 +640,7 @@
     else if (a === 'test-hex') testHex();
     else if (a === 'suggest') suggestWord();
     else if (a === 'photo-pick') pickPhotoColor(+v);
-    else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
+    else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p class="t">Applied the nearest approved color.</p>'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; fullRender(); }
   });
   document.addEventListener('input', (e) => { if (e.target.id === 'pname') { S.pname = e.target.value.trim().slice(0, 28); writeHash(); } });
