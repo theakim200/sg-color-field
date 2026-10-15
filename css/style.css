@@ -171,7 +171,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .inp { position: relative; height: 31px; }
 .inp input { width: 100%; height: 31px; border-radius: 30px; background: #fff; padding: 0 72px 0 11px; font-size: 14px; }
 .inp input::placeholder { color: #adadad; opacity: 1; }
-.res-eval { margin-top: 14px; }
+.res.msg { margin-top: -8px; } .res:empty { display: none; }
 .photo { display: flex; align-items: center; gap: 12px; min-height: 22px; }
 .photo .pal { display: flex; gap: 6px; }
 .photo .pc { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 .5px rgba(0,0,0,.25); padding: 0; transition: transform .15s; } .photo .pc:hover { transform: scale(1.12); }
@@ -231,7 +231,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .lib .it { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 14.63px; font-size: 13px; line-height: .88; text-align: center; }
 .lib .th { position: relative; width: 100%; aspect-ratio: 94.856 / 94.284; border-radius: 13.5px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
 .lib .th i { display: block; }
-.lib .nm { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib .nm { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; margin: -2px 0; } /* room for descenders (g, y, p) */
 .lib .hov { position: absolute; left: 50%; top: 50%; width: 46px; height: 22px; margin: -11px 0 0 -23px; border-radius: 5px; background: #000; display: none; place-items: center; grid-template-columns: 1fr 1fr; }
 .lib .hov button { width: 23px; height: 22px; display: grid; place-items: center; } .lib .hov svg { width: 12px; height: 12px; }
 .lib .it:hover .hov, .lib .it:focus-within .hov { display: grid; }

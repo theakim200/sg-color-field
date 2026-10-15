@@ -42,7 +42,7 @@
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
     chips: { ...seed }, pname: '', picked: { g1: false, g2: false, r1: false, r2: false },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
-    recs: [], sug: null, keepEval: false, photo: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
+    recs: [], sug: null, sugMsg: '', photo: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
 
   /* ---------- derived state ---------- */
@@ -304,7 +304,9 @@
                 <div class="track sat" id="int"><span class="knob"></span></div>
               </div>
               <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
+              <div class="res msg" id="hexres"></div>
               <div class="inp"><input id="kw" type="text" placeholder="Try a word: tomato, olive" spellcheck="false" autocomplete="off" aria-label="Suggest colors for a word"><button class="go go-wide" data-action="suggest">Suggest</button></div>
+              <div class="res msg" id="sugres"></div>
               <div class="photo"><label class="lnk" for="photo">Upload a photo</label><input id="photo" type="file" accept="image/*" hidden><span class="pal" id="pal"></span></div>
             </div>
             <div class="res" id="res"></div>
@@ -319,7 +321,7 @@
     if (S.step === 1) ui.bal = makeSlider($('#bal'), 2, (v) => { S.p = v; schedule(); }, 'Balance between Grounded and Ripe');
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
-        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; schedule();
+        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; schedule();
       }, 'Saturation');
       const fb = $('#fieldbox'); let drag = false;
       fb.addEventListener('pointerdown', (e) => { drag = true; fb.setPointerCapture(e.pointerId); pickFromPointer(e); });
@@ -329,7 +331,7 @@
         const c = S.chips[S.active], st = e.shiftKey ? 10 : 2;
         const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, 0.01], ArrowDown: [0, -0.01] }[e.key];
         if (!mv) return; e.preventDefault();
-        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
+        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; schedule();
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
       $('#kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') suggestWord(); });
@@ -379,13 +381,14 @@
     $('#int').style.background = S.picked[S.active] ? `linear-gradient(90deg, ${stops.join(', ')})` : 'linear-gradient(90deg, #e6e6e6, #b9b9b9)'; // gray until a color is chosen
     ui.int.set(S.t[S.active]);
     drawField();
+    $('#hexres').innerHTML = S.testMsg; $('#sugres').innerHTML = S.sugMsg;
 
     if (!S.picked[S.active]) {
-      $('#res').innerHTML = S.testMsg || `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
+      $('#res').innerHTML = `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
     } else {
       const ev = E.evaluate(cur.pickedChips.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
       const verdict = `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
-      $('#res').innerHTML = !S.testMsg ? verdict : S.keepEval ? `${S.testMsg}<div class="res-eval">${verdict}</div>` : S.testMsg;
+      $('#res').innerHTML = verdict;
     }
   }
 
@@ -423,7 +426,7 @@
     const r = $('#field').getBoundingClientRect(), { Ltop, Lbot } = FIELD;
     const h = C.clamp((e.clientX - r.left) / r.width, 0, 0.9999) * 360;
     const L = Ltop - C.clamp((e.clientY - r.top) / r.height, 0, 1) * (Ltop - Lbot);
-    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
+    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; schedule();
   }
   function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); markPicked(id); }
 
@@ -436,35 +439,35 @@
       cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
       const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
       S.photo = X.dominant(g.getImageData(0, 0, cv.width, cv.height).data, 5);
-      S.testMsg = S.photo.length ? '<p class="t">Pick a tone from your photo.</p>' : '<p>We could not find colors in that photo.</p>'; S.keepEval = false;
+      S.testMsg = ''; S.sugMsg = S.photo.length ? '<p class="t">Pick a tone from your photo.</p>' : '<p>We could not find colors in that photo.</p>';
       fullRender();
     };
-    img.onerror = () => { URL.revokeObjectURL(url); S.testMsg = '<p>That file could not be read as an image.</p>'; S.keepEval = false; renderStep2(); };
+    img.onerror = () => { URL.revokeObjectURL(url); S.testMsg = ''; S.sugMsg = '<p>That file could not be read as an image.</p>'; renderStep2(); };
     img.src = url;
   }
   function pickPhotoColor(i) {
     const id = S.active, key = activeKey(), c = C.fromHex(S.photo[i]), m = T.membership(c);
     const snapped = m.territory === key ? c : T.snapInto(key, c);
     setChip(id, snapped);
-    S.testMsg = `${m.territory === key ? '' : `<p>Moved into ${terrName(key)}.</p>`}<p class="t">Press a tone to try another.</p>`; S.keepEval = true;
+    S.testMsg = ''; S.sugMsg = '<p class="t">Press a tone to try another.</p>';
     fullRender();
   }
 
   /* Word to color: each press steps to the next suggestion for the word, inside the selected territory. */
   function suggestWord() {
     const word = $('#kw').value.trim(), id = S.active, key = activeKey(), hit = K.lookup(word);
-    if (!word) { S.testMsg = '<p>Type a color word, like tomato or olive.</p>'; renderStep2(); return; }
-    if (!hit) { S.testMsg = `<p>We don't know "${esc(word)}" yet.</p><p class="t">Try a color, fruit or flower name, like tomato, olive or lavender.</p>`; renderStep2(); return; }
+    if (!word) { S.testMsg = ''; S.sugMsg = '<p>Type a color word, like tomato or olive.</p>'; renderStep2(); return; }
+    if (!hit) { S.testMsg = ''; S.sugMsg = `<p>We don't know "${esc(word)}" yet.</p><p class="t">Try a color, fruit or flower name, like tomato, olive or lavender.</p>`; renderStep2(); return; }
     const sig = key + hit.hex;
     if (!S.sug || S.sug.sig !== sig) S.sug = { sig, i: -1, ...K.suggest(key, hit.hex) };
     S.sug.i = (S.sug.i + 1) % S.sug.pool.length;
     setChip(id, S.sug.pool[S.sug.i]);
-    S.testMsg = `${S.sug.i === 0 && S.sug.moved ? `<p>Moved into ${terrName(key)}.</p>` : ''}<p class="t">Press Suggest for another.</p>`; S.keepEval = true;
+    S.testMsg = ''; S.sugMsg = '<p class="t">Press Suggest for another.</p>';
     fullRender(); $('#kw').value = word;
   }
 
   function testHex() {
-    S.keepEval = false;
+    S.sugMsg = '';
     const c = C.fromHex($('#hex').value), key = activeKey(), id = S.active;
     if (!c) { S.testMsg = '<p>Enter a valid HEX, like #E4572E.</p>'; renderStep2(); return; }
     if (c.C < 0.02) c.h = S.chips[id].h;
@@ -601,7 +604,7 @@
   function goStep(n) {
     if (n === 3 && S.step !== 3) S.cpBackup = { chips: { ...S.chips }, t: { ...S.t }, picked: { ...S.picked } };
     if (n === 2 && S.step === 1) S.active = TAB_ORDER.find((id) => cur.ids.includes(id)) || S.active; // Ripe first
-    S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; fullRender();
+    S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; S.sugMsg = ''; fullRender();
   }
   function restart() {
     exitThen(() => { resetAll(); $('#art').dataset.view = 'main'; });
@@ -622,10 +625,10 @@
     else if (a === 'step') { if (+v <= S.step) goStep(+v); }
     else if (a === 'restart') restart();
     else if (a === 'layout') { S.picks[cur.z.id] = +v; fullRender(); }
-    else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } if (S.step < 2) return; S.active = v; S.testMsg = ''; fullRender(); }
+    else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } if (S.step < 2) return; S.active = v; S.testMsg = ''; S.sugMsg = ''; fullRender(); }
     else if (a === 'about') setView(S.view === 'about' ? 'main' : 'about');
     else if (a === 'close-sheet') setView('main');
-    else if (a === 'mix') { S.p = 0.5; S.testMsg = ''; fullRender(); }
+    else if (a === 'mix') { S.p = 0.5; S.testMsg = ''; S.sugMsg = ''; fullRender(); }
     else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
     else if (a === 'reset-sel' && S.cpBackup) { Object.assign(S.chips, S.cpBackup.chips); Object.assign(S.t, S.cpBackup.t); Object.assign(S.picked, S.cpBackup.picked); fullRender(); }
     else if (a === 'copy') copy(v);
@@ -640,7 +643,7 @@
     else if (a === 'suggest') suggestWord();
     else if (a === 'photo-pick') pickPhotoColor(+v);
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
-    else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
+    else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; S.sugMsg = ''; fullRender(); }
   });
   document.addEventListener('input', (e) => { if (e.target.id === 'pname') { S.pname = e.target.value.trim().slice(0, 28); writeHash(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.busy && S.view !== 'main' && S.view !== 'intro') setView('main'); });
