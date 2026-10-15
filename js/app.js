@@ -6,7 +6,7 @@
    Evergreen is always present; up to 3 more chips (Grounded g1/g2, Ripe r1/r2). The balance slider picks a zone
    and each zone allows specific combinations (js/spectrum.js). */
 (function () {
-  const { color: C, territories: T, engine: E, spectrum: SP, motion: M, keywords: K } = SG;
+  const { color: C, territories: T, engine: E, spectrum: SP, motion: M, keywords: K, extract: X } = SG;
   const { TERRITORIES, CONFIG } = T;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -42,7 +42,7 @@
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
     chips: { ...seed }, pname: '', picked: { g1: false, g2: false, r1: false, r2: false },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
-    recs: [], sug: null, fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
+    recs: [], sug: null, keepEval: false, photo: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
 
   /* ---------- derived state ---------- */
@@ -305,6 +305,7 @@
               </div>
               <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
               <div class="inp"><input id="kw" type="text" placeholder="Try a word: tomato, olive" spellcheck="false" autocomplete="off" aria-label="Suggest colors for a word"><button class="go go-wide" data-action="suggest">Suggest</button></div>
+              <div class="photo"><label class="lnk" for="photo">Upload a photo</label><input id="photo" type="file" accept="image/*" hidden><span class="pal" id="pal"></span></div>
             </div>
             <div class="res" id="res"></div>
           </div>
@@ -332,6 +333,7 @@
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
       $('#kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') suggestWord(); });
+      $('#photo').addEventListener('change', (e) => loadPhoto(e.target.files[0]));
     }
   }
 
@@ -373,6 +375,7 @@
     renderTabs();
     // gray (no chroma) at this lightness up to the most saturated color the territory allows at this hue
     const cc = S.chips[S.active], top = T.colorAt(key, cc.h, cc.L, 1), stops = Array.from({ length: 9 }, (_, i) => C.toHex(C.fitToGamut({ L: top.L, C: top.C * i / 8, h: top.h })));
+    $('#pal').innerHTML = S.photo.map((hex, i) => `<button class="pc" data-action="photo-pick" data-v="${i}" style="background:${hex}" aria-label="Use ${hex}" title="${hex}"></button>`).join('');
     $('#int').style.background = S.picked[S.active] ? `linear-gradient(90deg, ${stops.join(', ')})` : 'linear-gradient(90deg, #e6e6e6, #b9b9b9)'; // gray until a color is chosen
     ui.int.set(S.t[S.active]);
     drawField();
@@ -381,7 +384,8 @@
       $('#res').innerHTML = S.testMsg || `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
     } else {
       const ev = E.evaluate(cur.pickedChips.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
-      $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+      const verdict = `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+      $('#res').innerHTML = !S.testMsg ? verdict : S.keepEval ? `${S.testMsg}<div class="res-eval">${verdict}</div>` : S.testMsg;
     }
   }
 
@@ -423,6 +427,29 @@
   }
   function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); markPicked(id); }
 
+  /* Photo to color: the main tones of an uploaded image; picking one moves it into the selected territory. */
+  function loadPhoto(file) {
+    if (!file) return;
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const cv = document.createElement('canvas'), n = 56, k = Math.min(1, n / Math.max(img.width, img.height));
+      cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+      const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+      S.photo = X.dominant(g.getImageData(0, 0, cv.width, cv.height).data, 5);
+      S.testMsg = S.photo.length ? '<p class="t">Pick a tone from your photo.</p>' : '<p>We could not find colors in that photo.</p>'; S.keepEval = false;
+      fullRender();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); S.testMsg = '<p>That file could not be read as an image.</p>'; S.keepEval = false; renderStep2(); };
+    img.src = url;
+  }
+  function pickPhotoColor(i) {
+    const id = S.active, key = activeKey(), c = C.fromHex(S.photo[i]), m = T.membership(c);
+    const snapped = m.territory === key ? c : T.snapInto(key, c);
+    setChip(id, snapped);
+    S.testMsg = `${m.territory === key ? '' : `<p>Moved into ${terrName(key)}.</p>`}<p class="t">Press a tone to try another.</p>`; S.keepEval = true;
+    fullRender();
+  }
+
   /* Word to color: each press steps to the next suggestion for the word, inside the selected territory. */
   function suggestWord() {
     const word = $('#kw').value.trim(), id = S.active, key = activeKey(), hit = K.lookup(word);
@@ -432,12 +459,12 @@
     if (!S.sug || S.sug.sig !== sig) S.sug = { sig, i: -1, ...K.suggest(key, hit.hex) };
     S.sug.i = (S.sug.i + 1) % S.sug.pool.length;
     setChip(id, S.sug.pool[S.sug.i]);
-    const moved = S.sug.i === 0 && S.sug.moved ? ` Moved into ${terrName(key)}.` : '';
-    S.testMsg = `<p>${esc(hit.name)} in ${terrName(key)}, ${S.sug.i + 1} of ${S.sug.pool.length}.${moved}</p><p class="t">Press Suggest for another.</p>`;
+    S.testMsg = `${S.sug.i === 0 && S.sug.moved ? `<p>Moved into ${terrName(key)}.</p>` : ''}<p class="t">Press Suggest for another.</p>`; S.keepEval = true;
     fullRender(); $('#kw').value = word;
   }
 
   function testHex() {
+    S.keepEval = false;
     const c = C.fromHex($('#hex').value), key = activeKey(), id = S.active;
     if (!c) { S.testMsg = '<p>Enter a valid HEX, like #E4572E.</p>'; renderStep2(); return; }
     if (c.C < 0.02) c.h = S.chips[id].h;
@@ -611,6 +638,7 @@
     else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderLibrary(); }
     else if (a === 'test-hex') testHex();
     else if (a === 'suggest') suggestWord();
+    else if (a === 'photo-pick') pickPhotoColor(+v);
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
   });

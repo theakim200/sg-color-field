@@ -46,12 +46,12 @@
   function suggest(key, hex, want = 18) {
     const base = C.fromHex(hex), rnd = mulberry(seedOf(key + hex));
     if (base.C < 0.02) base.h = 0; // grays have no hue: start at red
-    const first = T.snapInto(key, base), pool = [first], apart = (c) => pool.every((p) => C.deltaE(p, c) > 0.045);
-    for (const spread of [16, 26, 40]) {
-      for (let i = 0; i < 120 && pool.length < want; i++) {
-        const h = (base.h + (rnd() * 2 - 1) * spread + 360) % 360, L = base.L + (rnd() * 2 - 1) * 0.2;
+    const first = T.snapInto(key, base), pool = [first], apart = (c) => pool.every((p) => C.deltaE(p, c) > 0.03);
+    for (const spread of [7, 12, 18, 24]) { // stay close to the word's own hue: tomato must not drift into pink or orange-yellow
+      for (let i = 0; i < 250 && pool.length < want; i++) {
+        const h = (base.h + (rnd() * 2 - 1) * spread + 360) % 360, L = base.L + (rnd() * 2 - 1) * 0.12;
         const c = T.colorAt(key, h, L, 0.1 + rnd() * 0.9);
-        if (T.membership(c).territory === key && apart(c)) pool.push(c);
+        if (T.membership(c).territory === key && T.hueDiff(c.h, base.h) <= 24 && apart(c)) pool.push(c);
       }
       if (pool.length >= want) break;
     }
