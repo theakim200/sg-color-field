@@ -145,8 +145,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .track .knob { position: absolute; border-radius: 50%; background: var(--gray-1); top: 50%; transform: translateY(-50%); }
 .track.big { height: 23px; } .track.big .knob { width: 19px; height: 19px; }
 .slab { color: var(--gray-3); font-size: 14px; line-height: 1.11; text-align: left; }
-.track.sat { height: 18px; border-radius: 9px; background: #e4e4e4; overflow: visible; }
-.track.sat .knob { width: 22px; height: 22px; box-sizing: border-box; border: 3px solid #fff; background: transparent; box-shadow: 0 0 0 .5px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.25), inset 0 0 0 .5px rgba(0,0,0,.2); }
+.track.sat { height: 10px; border-radius: 5px; background: #e4e4e4; overflow: visible; }
+.track.sat .knob { width: 16px; height: 16px; box-sizing: border-box; border: 2.5px solid #fff; background: transparent; box-shadow: 0 0 0 .5px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.25), inset 0 0 0 .5px rgba(0,0,0,.2); }
 .track.small { height: 15px; border-radius: 8px; } .track.small .knob { width: 13px; height: 13px; }
 .opts { position: relative; display: flex; flex-direction: column; }
 .pill { position: absolute; left: 0; top: 0; width: 0; height: 0; background: #fff; border-radius: 13px; z-index: 0; pointer-events: none; transition: left var(--t-pill) var(--ease), top var(--t-pill) var(--ease), width var(--t-pill) var(--ease), height var(--t-pill) var(--ease), opacity var(--t-fade) linear; }
