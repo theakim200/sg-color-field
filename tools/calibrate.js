@@ -109,6 +109,11 @@ if (require.main === module) {
     }
     if (!done) break;
   }
+  // the territories must never overlap: where the boxes touch, pull Grounded's top chroma just under Ripe's floor
+  tables.grounded.forEach((G, i) => {
+    const R = tables.ripe[i], apart = G[4] < R[3] || G[2] < R[1] || R[2] < G[1];
+    if (!apart) G[4] = Math.max(G[3] + 0.01, R[3] - 0.004);
+  });
   const checks = validate(tables, samples);
   const out = { method: 'see tools/calibrate.js', margin: MARGIN, keypoints: KEYPOINTS, anchors: A, conflicts: [...g.conflicts, ...r.conflicts], tables, checks: checks.map((c) => ({ t: c.t, s: c.s, hex: c.hex, note: c.note, L: c.L, C: c.C, h: c.h, depth: +c.depth.toFixed(3), ok: c.ok })) };
   fs.writeFileSync(path.join(root, 'calibration/proposed-tables.json'), JSON.stringify(out, null, 1));
