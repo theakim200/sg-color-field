@@ -168,17 +168,13 @@
     art.style.setProperty('--sw', (baseW * s).toFixed(1) + 'px'); st.style.setProperty('--blk-r', (46.773 * s).toFixed(2) + 'px');
     st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
   }
-  /* The selected block shows how type behaves on it: Aa in white, ink and Evergreen, then one usage tag and one note. */
+  /* The selected block shows how type behaves on it: Aa in white, ink and Evergreen; crossed out when APCA Lc is under 30. */
   function infoHtml(it) {
-    const g = E.guidance(it.hex, it.c), cfg = CONFIG;
-    const aa = [cfg.whiteHex, cfg.inkHex, cfg.evergreenHex].map((fg) => {
+    const cfg = CONFIG;
+    return '<div class="bi-aas">' + [cfg.whiteHex, cfg.inkHex, cfg.evergreenHex].map((fg) => {
       const r = E.contrastLevel(fg, it.hex);
       return `<span class="bi-aa ${r.level}" style="color:${fg}" title="${LEVEL[r.level][0]}">Aa</span>`;
-    }).join('');
-    const use = g.tags.find((t) => !/Evergreen/.test(t.text) && t.tone !== 'good') || g.tags.find((t) => !/Evergreen/.test(t.text));
-    const ev = g.tags.find((t) => /Evergreen/.test(t.text));
-    const note = (g.rel.notes && g.rel.notes[0]) || '';
-    return `<div class="bi-aas">${aa}</div><div class="bi-tg">${[use, ev].filter(Boolean).map((t) => `<span class="bi-pill ${t.tone}">${esc(t.text)}</span>`).join('')}</div>${note ? `<p>${esc(note)}</p>` : ''}`;
+    }).join('') + '</div>';
   }
   function renderStage() {
     sizeStage();
