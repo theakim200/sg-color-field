@@ -74,18 +74,19 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .blk .sub { position: absolute; left: 0; right: 0; bottom: 6%; padding: 0 28px; box-sizing: border-box; font-family: var(--font); font-weight: 400; font-size: 14px; line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: normal; color: #c1c1c1; }
 .blk .sub:empty { display: none; }
 /* not chosen yet: panel gray with inactive-step gray type */
+.blk.blank .face { background: #eee; color: #c1c1c1; }
 .blk .binfo { position: absolute; left: 0; right: 0; bottom: 6%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 16px;
   font-family: var(--font); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.25; white-space: normal; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .blk.sel .binfo { opacity: 1; } .blk .binfo:empty { display: none; }
 .binfo .bi-aas { display: flex; gap: 14px; font-family: var(--font-cn); font-weight: 700; font-size: 30px; line-height: .88; }
-.binfo .bi-aa.fail { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.binfo .bi-aa.fail { text-decoration: line-through; text-decoration-thickness: 2.5px; }
 /* phone: blocks are short, so the tagline and the type check show only when the block has room (set in renderStage) */
 #art.mobile .blk .sub { display: none; font-size: 12px; padding: 0 12px; bottom: 9px; }
 #art.mobile .blk.room-sub .sub:not(:empty) { display: block; }
 #art.mobile .blk .binfo { display: none; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; bottom: 5px; padding: 0 8px; }
 #art.mobile .blk.room-info .binfo:not(:empty) { display: flex; }
 #art.mobile .binfo .bi-aas { gap: 12px; font-size: 24px; }
-#art.mobile #art.mobile #art.mobile .blk.blank .face { background: #eee; color: #c1c1c1; }
+
 
 /* ---------- panels: full height between the 25px margins ---------- */
 .panel { position: absolute; top: 25px; bottom: 25px; width: 332px; right: -380px; background: var(--panel); border-radius: 23px; transition: right var(--t-panel) var(--ease); z-index: 3; }
@@ -143,6 +144,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .track { position: relative; background: #fff; border-radius: 12px; touch-action: none; cursor: pointer; }
 .track .knob { position: absolute; border-radius: 50%; background: var(--gray-1); top: 50%; transform: translateY(-50%); }
 .track.big { height: 23px; } .track.big .knob { width: 19px; height: 19px; }
+.slab { color: var(--gray-3); font-size: 14px; line-height: 1.11; text-align: left; }
+.track.sat { height: 18px; border-radius: 9px; background: #e4e4e4; overflow: visible; }
+.track.sat .knob { width: 22px; height: 22px; box-sizing: border-box; border: 3px solid #fff; background: transparent; box-shadow: 0 0 0 .5px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.25), inset 0 0 0 .5px rgba(0,0,0,.2); }
 .track.small { height: 15px; border-radius: 8px; } .track.small .knob { width: 13px; height: 13px; }
 .opts { position: relative; display: flex; flex-direction: column; }
 .pill { position: absolute; left: 0; top: 0; width: 0; height: 0; background: #fff; border-radius: 13px; z-index: 0; pointer-events: none; transition: left var(--t-pill) var(--ease), top var(--t-pill) var(--ease), width var(--t-pill) var(--ease), height var(--t-pill) var(--ease), opacity var(--t-fade) linear; }
@@ -199,7 +203,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .mx .h i { width: 11px; height: 11px; border-radius: 50%; display: block; box-shadow: 0 0 0 .5px rgba(0,0,0,.2); }
 .mx .c { height: 39px; border-radius: 3px; position: relative; display: grid; place-items: center; font-family: var(--font-cn); font-weight: 700; font-size: 14px; line-height: .88; letter-spacing: 0; }
 .mx .c.same { background: repeating-linear-gradient(45deg, #e4e4e8 0 4px, #f6f6f8 4px 8px); }
-.mx .c.lvl-fail .a { opacity: .4; text-decoration: line-through; }
+.mx .c.lvl-fail .a { opacity: .4; text-decoration: line-through; text-decoration-thickness: 2px; }
 .mx .c .m { position: absolute; right: 4px; bottom: 4px; font: 400 10.5px/.88 var(--font); letter-spacing: var(--track); display: flex; }
 .mx .c .m svg { display: block; width: 8px; height: 8px; }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; width: 251px; font-size: 12px; line-height: .88; color: var(--gray-3); }

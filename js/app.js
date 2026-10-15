@@ -298,8 +298,8 @@
               <div class="stack gap9">
                 <div class="fieldbox" id="fieldbox" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
                   <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
-                <div class="axis"><span id="lo"></span><i><b></b></i><span id="hi"></span></div>
-                <div class="track small" id="int"><span class="knob"></span></div>
+                <div class="slab">Saturation</div>
+                <div class="track sat" id="int"><span class="knob"></span></div>
               </div>
               <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
             </div>
@@ -316,7 +316,7 @@
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
         const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; schedule();
-      }, 'Intensity');
+      }, 'Saturation');
       const fb = $('#fieldbox'); let drag = false;
       fb.addEventListener('pointerdown', (e) => { drag = true; fb.setPointerCapture(e.pointerId); pickFromPointer(e); });
       fb.addEventListener('pointermove', (e) => { if (drag) pickFromPointer(e); });
@@ -367,7 +367,9 @@
     const key = activeKey(), terr = TERRITORIES[key];
     $('#sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
     renderTabs();
-    $('#lo').textContent = terr.slider[0]; $('#hi').textContent = terr.slider[1];
+    // the track shows the real chroma range at the current hue and lightness
+    const cc = S.chips[S.active], stops = Array.from({ length: 9 }, (_, i) => C.toHex(T.colorAt(key, cc.h, cc.L, i / 8)));
+    $('#int').style.background = `linear-gradient(90deg, ${stops.join(', ')})`;
     ui.int.set(S.t[S.active]);
     drawField();
 
