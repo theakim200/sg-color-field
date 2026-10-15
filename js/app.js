@@ -6,7 +6,7 @@
    Evergreen is always present; up to 3 more chips (Grounded g1/g2, Ripe r1/r2). The balance slider picks a zone
    and each zone allows specific combinations (js/spectrum.js). */
 (function () {
-  const { color: C, territories: T, engine: E, spectrum: SP, motion: M } = SG;
+  const { color: C, territories: T, engine: E, spectrum: SP, motion: M, keywords: K } = SG;
   const { TERRITORIES, CONFIG } = T;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -42,7 +42,7 @@
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
     chips: { ...seed }, pname: '', picked: { g1: false, g2: false, r1: false, r2: false },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
-    recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
+    recs: [], sug: null, fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
 
   /* ---------- derived state ---------- */
@@ -304,6 +304,7 @@
                 <div class="track sat" id="int"><span class="knob"></span></div>
               </div>
               <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
+              <div class="inp"><input id="kw" type="text" placeholder="Try a word: tomato, olive" spellcheck="false" autocomplete="off" aria-label="Suggest colors for a word"><button class="go go-wide" data-action="suggest">Suggest</button></div>
             </div>
             <div class="res" id="res"></div>
           </div>
@@ -330,6 +331,7 @@
         S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
+      $('#kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') suggestWord(); });
     }
   }
 
@@ -420,6 +422,20 @@
     S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
   }
   function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); markPicked(id); }
+
+  /* Word to color: each press steps to the next suggestion for the word, inside the selected territory. */
+  function suggestWord() {
+    const word = $('#kw').value.trim(), id = S.active, key = activeKey(), hit = K.lookup(word);
+    if (!word) { S.testMsg = '<p>Type a color word, like tomato or olive.</p>'; renderStep2(); return; }
+    if (!hit) { S.testMsg = `<p>We don't know "${esc(word)}" yet.</p><p class="t">Try a color, fruit or flower name, like tomato, olive or lavender.</p>`; renderStep2(); return; }
+    const sig = key + hit.hex;
+    if (!S.sug || S.sug.sig !== sig) S.sug = { sig, i: -1, ...K.suggest(key, hit.hex) };
+    S.sug.i = (S.sug.i + 1) % S.sug.pool.length;
+    setChip(id, S.sug.pool[S.sug.i]);
+    const moved = S.sug.i === 0 && S.sug.moved ? ` Moved into ${terrName(key)}.` : '';
+    S.testMsg = `<p>${esc(hit.name)} in ${terrName(key)}, ${S.sug.i + 1} of ${S.sug.pool.length}.${moved}</p><p class="t">Press Suggest for another.</p>`;
+    fullRender(); $('#kw').value = word;
+  }
 
   function testHex() {
     const c = C.fromHex($('#hex').value), key = activeKey(), id = S.active;
@@ -594,6 +610,7 @@
     else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, name: it.name, picked: it.picked }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
     else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderLibrary(); }
     else if (a === 'test-hex') testHex();
+    else if (a === 'suggest') suggestWord();
     else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
     else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
   });

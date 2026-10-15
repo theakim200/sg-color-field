@@ -1,7 +1,7 @@
 // Run: node tests/engine.test.js
 const assert = require('assert');
-require('../js/color.js'); require('../js/territories.js'); require('../js/spectrum.js'); require('../js/engine.js');
-const { color: C, territories: T, engine: E, spectrum: SP } = globalThis.SG;
+require('../js/color.js'); require('../js/territories.js'); require('../js/spectrum.js'); require('../js/keywords.js'); require('../js/engine.js');
+const { color: C, territories: T, engine: E, spectrum: SP, keywords: K } = globalThis.SG;
 let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ok', name); };
 
 ok('hex <-> oklch round trip', () => {
@@ -118,5 +118,17 @@ ok('contrast passes at APCA |Lc| >= 30, with no body / large split', () => {
 });
 ok('a deep, tempered color gets body-text approval', () => {
   assert(E.guidance('#2B3A55', C.fromHex('#2B3A55')).tags.some((t) => t.text === 'Approved for text'));
+});
+ok('keywords: lookup is forgiving, unknown words return null', () => {
+  assert.strictEqual(K.lookup('  Tomato ').hex, '#FF6347'); assert.strictEqual(K.lookup('토마토').name, '토마토'); assert.strictEqual(K.lookup('zzzz'), null);
+});
+ok('keywords: suggestions stay inside the territory, are distinct, and differ between Ripe and Grounded', () => {
+  const hex = K.lookup('tomato').hex, r = K.suggest('ripe', hex), g = K.suggest('grounded', hex);
+  for (const [key, s] of [['ripe', r], ['grounded', g]]) {
+    assert(s.pool.length >= 4, key + ' pool ' + s.pool.length);
+    for (const c of s.pool) assert.strictEqual(T.membership(c).territory, key);
+    for (let i = 0; i < s.pool.length; i++) for (let j = i + 1; j < s.pool.length; j++) assert(C.deltaE(s.pool[i], s.pool[j]) > 0.04);
+  }
+  assert(C.deltaE(r.pool[0], g.pool[0]) > 0.05);
 });
 console.log(`\n${n} checks passed`);
