@@ -110,10 +110,11 @@ ok('evaluate handles 1, 2 and 3 chips; 3 chips are not recommended', () => {
   const three = E.evaluate([{ key: 'grounded', c: g }, { key: 'grounded', c: g2 }, { key: 'ripe', c: r }]);
   assert(!three.recommended && three.cross.length === 2 && three.same.length === 1 && three.score > 0 && three.score <= 1);
 });
-ok('guidance: bright Evergreen is large-type only (white 3.2:1, ink Lc 44)', () => {
-  const g = E.guidance('#00A810', T.evergreen);
-  assert(g.tags.some((t) => t.text === 'Large type only on top'));
-  assert(!g.tags.some((t) => t.text === 'Approved for text'));
+ok('contrast passes at APCA |Lc| >= 30, with no body / large split', () => {
+  assert.strictEqual(E.contrastLevel('#000000', '#FFFFFF').level, 'pass');
+  assert.strictEqual(E.contrastLevel('#777777', '#888888').level, 'fail');
+  const lc = (fg, bg) => Math.abs(C.apca(fg, bg));
+  for (const [fg, bg] of [['#111111', '#4E8078'], ['#FFFFFF', '#00A810'], ['#111111', '#00A810']]) assert.strictEqual(E.contrastLevel(fg, bg).level, lc(fg, bg) >= 30 ? 'pass' : 'fail');
 });
 ok('a deep, tempered color gets body-text approval', () => {
   assert(E.guidance('#2B3A55', C.fromHex('#2B3A55')).tags.some((t) => t.text === 'Approved for text'));
