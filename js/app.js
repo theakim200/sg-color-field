@@ -195,7 +195,7 @@
       const h = (STAGE_H * raw[id]) / sum;
       b.classList.remove('gone'); b.style.top = y + 'px'; b.style.height = h + 'px'; y += h;
       const blank = id !== 'e' && !it.picked;
-      b.classList.toggle('blank', blank);
+      b.classList.toggle('blank', blank); b.classList.toggle('room-sub', h >= 70); b.classList.toggle('room-info', h >= 84);
       const face = b.firstChild;
       face.style.backgroundColor = blank ? '' : it.hex; face.style.color = blank ? '' : labelColor(it.hex);
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);

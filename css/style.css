@@ -72,7 +72,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .blk.hot, .blk.sel { z-index: 3; }
 .blk .lab { display: block; padding: 0 20px; }
 .blk .sub { position: absolute; left: 0; right: 0; bottom: 6%; padding: 0 28px; box-sizing: border-box; font-family: var(--font); font-weight: 400; font-size: 14px; line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: normal; color: #c1c1c1; }
-.blk .sub:empty, #art.mobile .blk .sub { display: none; }
+.blk .sub:empty { display: none; }
 /* not chosen yet: panel gray with inactive-step gray type */
 .blk .binfo { position: absolute; left: 0; right: 0; bottom: 6%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 16px;
   font-family: var(--font); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.25; white-space: normal; opacity: 0; pointer-events: none; transition: opacity .3s; }
@@ -83,7 +83,15 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .binfo .bi-pill { font-size: 12px; padding: 4px 11px; border-radius: 999px; background: rgb(255 255 255 / 80%); color: #111; }
 .binfo .bi-pill.warn { background: #f4e7c6; color: #8a6a1c; } .binfo .bi-pill.info { background: #cfe2ea; color: #2f6580; } .binfo .bi-pill.bad { background: #f3c3b6; color: #b3261e; } .binfo .bi-pill.good { background: #d4efd6; color: #1c6b2a; }
 .binfo p { font-size: 12px; margin: 0; opacity: .85; }
-#art.mobile .blk .binfo { display: none; }
+/* phone: blocks are short, so the tagline and the type check show only when the block has room (set in renderStage) */
+#art.mobile .blk .sub { display: none; font-size: 12px; padding: 0 12px; bottom: 9px; }
+#art.mobile .blk.room-sub .sub:not(:empty) { display: block; }
+#art.mobile .blk .binfo { display: none; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; bottom: 9px; padding: 0 8px; }
+#art.mobile .blk.room-info .binfo:not(:empty) { display: flex; }
+#art.mobile .binfo .bi-aas { gap: 6px; font-size: 17px; }
+#art.mobile .binfo .bi-tg { flex-wrap: nowrap; gap: 4px; }
+#art.mobile .binfo .bi-pill { font-size: 10.5px; padding: 3px 8px; white-space: nowrap; }
+#art.mobile .binfo p { display: none; }
 .blk.blank .face { background: #eee; color: #c1c1c1; }
 
 /* ---------- panels: full height between the 25px margins ---------- */
