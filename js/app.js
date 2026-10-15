@@ -6,7 +6,7 @@
    Evergreen is always present; up to 3 more chips (Grounded g1/g2, Ripe r1/r2). The balance slider picks a zone
    and each zone allows specific combinations (js/spectrum.js). */
 (function () {
-  const { color: C, territories: T, engine: E, spectrum: SP, motion: M } = SG;
+  const { color: C, territories: T, engine: E, spectrum: SP, motion: M, keywords: K, extract: X } = SG;
   const { TERRITORIES, CONFIG } = T;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -26,6 +26,8 @@
   const LIB_KEY = 'sg-color-field:library:v1';
   const ICON = {
     q: '<svg viewBox="0 0 10 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M1.3 4.9C1.3 2.8 2.8 1.3 5 1.3s3.7 1.3 3.7 3.2c0 1.6-1 2.2-2 2.9-.9.6-1.7 1.2-1.7 2.6"/><circle cx="5" cy="14.2" r=".6" fill="#fff" stroke-width="1.4"/></svg>',
+    up: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4.5 8V1.3M1.6 4l2.9-2.9L7.4 4"/></svg>',
+    right: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M1 4.5h6.7M5 1.6l2.9 2.9L5 7.4"/></svg>',
     check: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4.8l2.3 2.4L8 1.6"/></svg>',
     cross: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M1 1l7 7M8 1L1 8"/></svg>',
     open: '<svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="1.2"><path d="M3 9l6-6M4 3h5v5"/></svg>',
@@ -40,7 +42,7 @@
     p: 0.5, picks: {}, active: 'r1', step: 1, view: 'main',
     chips: { ...seed }, pname: '', picked: { g1: false, g2: false, r1: false, r2: false },
     t: Object.fromEntries(CHIP_IDS.map((id) => [id, T.intensityOf(terrOf(id), seed[id])])),
-    recs: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
+    recs: [], sug: null, sugMsg: '', photoMsg: '', photo: [], fieldKey: null, fieldBitmap: null, pendingSnap: null, testMsg: '', cpBackup: null,
   };
 
   /* ---------- derived state ---------- */
@@ -168,17 +170,13 @@
     art.style.setProperty('--sw', (baseW * s).toFixed(1) + 'px'); st.style.setProperty('--blk-r', (46.773 * s).toFixed(2) + 'px');
     st.style.height = STAGE_H + 'px'; st.style.top = (innerHeight - STAGE_H) / 2 + 'px';
   }
-  /* The selected block shows how type behaves on it: Aa in white, ink and Evergreen, then one usage tag and one note. */
+  /* The selected block shows how type behaves on it: Aa in white, ink and Evergreen; crossed out when APCA Lc is under 30. */
   function infoHtml(it) {
-    const g = E.guidance(it.hex, it.c), cfg = CONFIG;
-    const aa = [cfg.whiteHex, cfg.inkHex, cfg.evergreenHex].map((fg) => {
+    const cfg = CONFIG;
+    return '<div class="bi-aas">' + [cfg.whiteHex, cfg.inkHex, cfg.evergreenHex].map((fg) => {
       const r = E.contrastLevel(fg, it.hex);
       return `<span class="bi-aa ${r.level}" style="color:${fg}" title="${LEVEL[r.level][0]}">Aa</span>`;
-    }).join('');
-    const use = g.tags.find((t) => !/Evergreen/.test(t.text) && t.tone !== 'good') || g.tags.find((t) => !/Evergreen/.test(t.text));
-    const ev = g.tags.find((t) => /Evergreen/.test(t.text));
-    const note = (g.rel.notes && g.rel.notes[0]) || '';
-    return `<div class="bi-aas">${aa}</div><div class="bi-tg">${[use, ev].filter(Boolean).map((t) => `<span class="bi-pill ${t.tone}">${esc(t.text)}</span>`).join('')}</div>${note ? `<p>${esc(note)}</p>` : ''}`;
+    }).join('') + '</div>';
   }
   function renderStage() {
     sizeStage();
@@ -195,7 +193,7 @@
       const h = (STAGE_H * raw[id]) / sum;
       b.classList.remove('gone'); b.style.top = y + 'px'; b.style.height = h + 'px'; y += h;
       const blank = id !== 'e' && !it.picked;
-      b.classList.toggle('blank', blank);
+      b.classList.toggle('blank', blank); b.classList.toggle('room-sub', h >= 70); b.classList.toggle('room-info', h >= 84);
       const face = b.firstChild;
       face.style.backgroundColor = blank ? '' : it.hex; face.style.color = blank ? '' : labelColor(it.hex);
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);
@@ -301,11 +299,13 @@
             <div class="stack gap12">
               <div class="stack gap9">
                 <div class="fieldbox" id="fieldbox" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
-                  <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
-                <div class="axis"><span id="lo"></span><i><b></b></i><span id="hi"></span></div>
-                <div class="track small" id="int"><span class="knob"></span></div>
+                  <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span><span class="fax fax-l">Lighter ${ICON.up}</span><span class="fax fax-h">Hue ${ICON.right}</span></div>
+                <div class="slab">Saturation</div>
+                <div class="track sat" id="int"><span class="knob"></span></div>
               </div>
-              <div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div>
+              <div class="fgrp"><div class="inp"><input id="hex" type="text" placeholder="Have a color in mind? #E4572E" spellcheck="false" autocomplete="off" aria-label="Check a HEX color"><button class="go" data-action="test-hex">Check</button></div><div class="res" id="hexres"></div></div>
+              <div class="fgrp"><div class="inp"><input id="kw" type="text" placeholder="Try a word: tomato, olive" spellcheck="false" autocomplete="off" aria-label="Suggest colors for a word"><button class="go go-wide" data-action="suggest">Suggest</button></div><div class="res" id="sugres"></div></div>
+              <div class="fgrp"><div class="photo"><label class="lnk" for="photo">Upload a photo</label><input id="photo" type="file" accept="image/*" hidden><span class="pal" id="pal"></span></div><div class="res" id="photores"></div></div>
             </div>
             <div class="res" id="res"></div>
           </div>
@@ -319,8 +319,8 @@
     if (S.step === 1) ui.bal = makeSlider($('#bal'), 2, (v) => { S.p = v; schedule(); }, 'Balance between Grounded and Ripe');
     if (S.step === 2) {
       ui.int = makeSlider($('#int'), 1, (v) => {
-        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; schedule();
-      }, 'Intensity');
+        const c = S.chips[S.active]; S.t[S.active] = v; S.chips[S.active] = T.colorAt(activeKey(), c.h, c.L, v); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; schedule();
+      }, 'Saturation');
       const fb = $('#fieldbox'); let drag = false;
       fb.addEventListener('pointerdown', (e) => { drag = true; fb.setPointerCapture(e.pointerId); pickFromPointer(e); });
       fb.addEventListener('pointermove', (e) => { if (drag) pickFromPointer(e); });
@@ -329,9 +329,11 @@
         const c = S.chips[S.active], st = e.shiftKey ? 10 : 2;
         const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, 0.01], ArrowDown: [0, -0.01] }[e.key];
         if (!mv) return; e.preventDefault();
-        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
+        S.chips[S.active] = T.colorAt(activeKey(), (c.h + mv[0] + 360) % 360, c.L + mv[1], S.t[S.active]); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; schedule();
       });
       $('#hex').addEventListener('keydown', (e) => { if (e.key === 'Enter') testHex(); });
+      $('#kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') suggestWord(); });
+      $('#photo').addEventListener('change', (e) => loadPhoto(e.target.files[0]));
     }
   }
 
@@ -371,15 +373,20 @@
     const key = activeKey(), terr = TERRITORIES[key];
     $('#sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
     renderTabs();
-    $('#lo').textContent = terr.slider[0]; $('#hi').textContent = terr.slider[1];
+    // gray (no chroma) at this lightness up to the most saturated color the territory allows at this hue
+    const cc = S.chips[S.active], top = T.colorAt(key, cc.h, cc.L, 1), stops = Array.from({ length: 9 }, (_, i) => C.toHex(C.fitToGamut({ L: top.L, C: top.C * i / 8, h: top.h })));
+    $('#pal').innerHTML = S.photo.map((hex, i) => `<button class="pc" data-action="photo-pick" data-v="${i}" style="background:${hex}" aria-label="Use ${hex}" title="${hex}"></button>`).join('');
+    $('#int').style.background = S.picked[S.active] ? `linear-gradient(90deg, ${stops.join(', ')})` : 'linear-gradient(90deg, #e6e6e6, #b9b9b9)'; // gray until a color is chosen
     ui.int.set(S.t[S.active]);
     drawField();
+    $('#hexres').innerHTML = S.testMsg; $('#sugres').innerHTML = S.sugMsg; $('#photores').innerHTML = S.photoMsg;
 
     if (!S.picked[S.active]) {
-      $('#res').innerHTML = S.testMsg || `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
+      $('#res').innerHTML = `<p>No ${terr.label} color chosen yet</p><p class="t">Click the color field, move the slider or check a HEX to choose one.</p>`;
     } else {
       const ev = E.evaluate(cur.pickedChips.map((i) => ({ key: i.key, c: i.c }))), [lab, tone] = overallLabel(ev.score);
-      $('#res').innerHTML = S.testMsg || `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+      const verdict = `<p>This combination <span class="tone-${tone}">${lab}</span></p><p class="t">${esc(ev.notes.slice(0, 2).join(' ') || 'Evergreen anchors the combination.')}</p>`;
+      $('#res').innerHTML = verdict;
     }
   }
 
@@ -417,11 +424,48 @@
     const r = $('#field').getBoundingClientRect(), { Ltop, Lbot } = FIELD;
     const h = C.clamp((e.clientX - r.left) / r.width, 0, 0.9999) * 360;
     const L = Ltop - C.clamp((e.clientY - r.top) / r.height, 0, 1) * (Ltop - Lbot);
-    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; schedule();
+    S.chips[S.active] = T.colorAt(activeKey(), h, L, S.t[S.active]); markPicked(S.active); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; schedule();
   }
   function setChip(id, c) { S.chips[id] = c; S.t[id] = T.intensityOf(terrOf(id), c); markPicked(id); }
 
+  /* Photo to color: the main tones of an uploaded image; picking one moves it into the selected territory. */
+  function loadPhoto(file) {
+    if (!file) return;
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const cv = document.createElement('canvas'), n = 56, k = Math.min(1, n / Math.max(img.width, img.height));
+      cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+      const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+      S.photo = X.dominant(g.getImageData(0, 0, cv.width, cv.height).data, 5);
+      S.testMsg = ''; S.sugMsg = S.photo.length ? '<p class="t">Pick a tone from your photo.</p>' : '<p>We could not find colors in that photo.</p>';
+      fullRender();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); S.testMsg = ''; S.sugMsg = '<p>That file could not be read as an image.</p>'; renderStep2(); };
+    img.src = url;
+  }
+  function pickPhotoColor(i) {
+    const id = S.active, key = activeKey(), c = C.fromHex(S.photo[i]), m = T.membership(c);
+    const snapped = m.territory === key ? c : T.snapInto(key, c);
+    setChip(id, snapped);
+    S.testMsg = ''; S.sugMsg = ''; S.photoMsg = m.territory === key ? '' : `<p class="t">Moved into ${terrName(key)}.</p>`;
+    fullRender();
+  }
+
+  /* Word to color: each press steps to the next suggestion for the word, inside the selected territory. */
+  function suggestWord() {
+    const word = $('#kw').value.trim(), id = S.active, key = activeKey(), hit = K.lookup(word);
+    if (!word) { S.testMsg = ''; S.sugMsg = '<p>Type a color word, like tomato or olive.</p>'; renderStep2(); return; }
+    if (!hit) { S.testMsg = ''; S.sugMsg = `<p>We don't know "${esc(word)}" yet.</p><p class="t">Try a color, fruit or flower name, like tomato, olive or lavender.</p>`; renderStep2(); return; }
+    const sig = key + hit.hex;
+    if (!S.sug || S.sug.sig !== sig) S.sug = { sig, i: -1, ...K.suggest(key, hit.hex) };
+    S.sug.i = (S.sug.i + 1) % S.sug.pool.length;
+    setChip(id, S.sug.pool[S.sug.i]);
+    S.testMsg = ''; S.sugMsg = '<p class="t">Press Suggest for another.</p>'; S.photoMsg = '';
+    fullRender(); $('#kw').value = word;
+  }
+
   function testHex() {
+    S.sugMsg = ''; S.photoMsg = '';
     const c = C.fromHex($('#hex').value), key = activeKey(), id = S.active;
     if (!c) { S.testMsg = '<p>Enter a valid HEX, like #E4572E.</p>'; renderStep2(); return; }
     if (c.C < 0.02) c.h = S.chips[id].h;
@@ -430,7 +474,7 @@
     const other = m.territory && cur.ids.some((x) => terrOf(x) === m.territory) ? m.territory : null;
     const where = m.territory ? `That color belongs to ${terrName(m.territory)}.` : 'That color sits outside the Sweetgreen territories.';
     S.pendingSnap = T.snapInto(key, c);
-    S.testMsg = `<p>${where} Nearest ${mine}: <i class="sw-chip" style="background:${C.toHex(S.pendingSnap)}"></i>${C.toHex(S.pendingSnap)}</p>
+    S.testMsg = `<p class="t">${where} Nearest ${mine}: <i class="sw-chip" style="background:${C.toHex(S.pendingSnap)}"></i>${C.toHex(S.pendingSnap)}</p>
       <div class="acts"><button class="lnk" data-action="snap">Use it</button>${other ? `<button class="lnk" data-action="goto" data-v="${other[0]}1" data-hex="${C.toHex(c)}">Use as ${terrName(other)}</button>` : ''}</div>`;
     renderStep2();
   }
@@ -558,7 +602,7 @@
   function goStep(n) {
     if (n === 3 && S.step !== 3) S.cpBackup = { chips: { ...S.chips }, t: { ...S.t }, picked: { ...S.picked } };
     if (n === 2 && S.step === 1) S.active = TAB_ORDER.find((id) => cur.ids.includes(id)) || S.active; // Ripe first
-    S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; fullRender();
+    S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; fullRender();
   }
   function restart() {
     exitThen(() => { resetAll(); $('#art').dataset.view = 'main'; });
@@ -579,10 +623,10 @@
     else if (a === 'step') { if (+v <= S.step) goStep(+v); }
     else if (a === 'restart') restart();
     else if (a === 'layout') { S.picks[cur.z.id] = +v; fullRender(); }
-    else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } if (S.step < 2) return; S.active = v; S.testMsg = ''; fullRender(); }
+    else if (a === 'chip') { if (v === 'e') { toast('Evergreen is the constant.'); return; } if (S.step < 2) return; S.active = v; S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; fullRender(); }
     else if (a === 'about') setView(S.view === 'about' ? 'main' : 'about');
     else if (a === 'close-sheet') setView('main');
-    else if (a === 'mix') { S.p = 0.5; S.testMsg = ''; fullRender(); }
+    else if (a === 'mix') { S.p = 0.5; S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; fullRender(); }
     else if (a === 'rec') { setChip(b.dataset.target, S.recs[+v].color); fullRender(); }
     else if (a === 'reset-sel' && S.cpBackup) { Object.assign(S.chips, S.cpBackup.chips); Object.assign(S.t, S.cpBackup.t); Object.assign(S.picked, S.cpBackup.picked); fullRender(); }
     else if (a === 'copy') copy(v);
@@ -594,8 +638,10 @@
     else if (a === 'lib-open') { const it = loadLib().find((x) => x.id === v); if (it) { applyState({ p: it.p, picks: it.picks, hex: it.hex, name: it.name, picked: it.picked }); S.step = 4; shown = 0; setView('main'); fullRender(); toast('Opened from library'); } }
     else if (a === 'lib-del') { saveLib(loadLib().filter((x) => x.id !== v)); renderLibrary(); }
     else if (a === 'test-hex') testHex();
-    else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p>Applied the nearest approved color.</p>'; fullRender(); }
-    else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; fullRender(); }
+    else if (a === 'suggest') suggestWord();
+    else if (a === 'photo-pick') pickPhotoColor(+v);
+    else if (a === 'snap') { setChip(S.active, S.pendingSnap); S.testMsg = '<p class="t">Applied the nearest approved color.</p>'; fullRender(); }
+    else if (a === 'goto') { S.active = v; setChip(v, C.fromHex(b.dataset.hex)); S.testMsg = ''; S.sugMsg = ''; S.photoMsg = ''; fullRender(); }
   });
   document.addEventListener('input', (e) => { if (e.target.id === 'pname') { S.pname = e.target.value.trim().slice(0, 28); writeHash(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !S.busy && S.view !== 'main' && S.view !== 'intro') setView('main'); });

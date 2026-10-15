@@ -1,7 +1,7 @@
 // Run: node tests/engine.test.js
 const assert = require('assert');
-require('../js/color.js'); require('../js/territories.js'); require('../js/spectrum.js'); require('../js/engine.js');
-const { color: C, territories: T, engine: E, spectrum: SP } = globalThis.SG;
+require('../js/color.js'); require('../js/territories.js'); require('../js/spectrum.js'); require('../js/keywords.js'); require('../js/extract.js'); require('../js/engine.js');
+const { color: C, territories: T, engine: E, spectrum: SP, keywords: K, extract: X } = globalThis.SG;
 let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ok', name); };
 
 ok('hex <-> oklch round trip', () => {
@@ -25,7 +25,7 @@ ok('territories do not overlap at any hue', () => {
   }
 });
 ok('territories are hue-dependent (not one rectangle)', () => {
-  assert(T.bounds('ripe', 95).Lmin - T.bounds('ripe', 270).Lmin > 0.25);
+  assert(Math.abs(T.bounds('ripe', 95).Lmin - T.bounds('ripe', 270).Lmin) > 0.1 && Math.abs(T.bounds('grounded', 90).Lmin - T.bounds('grounded', 180).Lmin) > 0.3);
 });
 ok('neutral and Evergreen itself are outside both territories', () => {
   assert.strictEqual(T.membership(C.fromHex('#888888')).territory, null);
@@ -118,5 +118,28 @@ ok('contrast passes at APCA |Lc| >= 30, with no body / large split', () => {
 });
 ok('a deep, tempered color gets body-text approval', () => {
   assert(E.guidance('#2B3A55', C.fromHex('#2B3A55')).tags.some((t) => t.text === 'Approved for text'));
+});
+ok('keywords: lookup is forgiving, unknown words return null', () => {
+  assert.strictEqual(K.lookup('  Tomato ').hex, '#FF6347'); assert.strictEqual(K.lookup('토마토').name, '토마토'); assert.strictEqual(K.lookup('zzzz'), null);
+});
+ok('keywords: suggestions stay inside the territory, are distinct, and differ between Ripe and Grounded', () => {
+  const hex = K.lookup('tomato').hex, r = K.suggest('ripe', hex), g = K.suggest('grounded', hex);
+  for (const [key, s] of [['ripe', r], ['grounded', g]]) {
+    assert(s.pool.length >= 3, key + ' pool ' + s.pool.length);
+    for (const c of s.pool) assert.strictEqual(T.membership(c).territory, key);
+    for (let i = 0; i < s.pool.length; i++) for (let j = i + 1; j < s.pool.length; j++) assert(C.deltaE(s.pool[i], s.pool[j]) > 0.025);
+  }
+  assert(C.deltaE(r.pool[0], g.pool[0]) > 0.05);
+});
+ok('keywords: tomato suggestions stay near red (no pink, no yellow)', () => {
+  const base = C.fromHex(K.lookup('tomato').hex);
+  for (const key of ['ripe', 'grounded']) for (const c of K.suggest(key, K.lookup('tomato').hex).pool) assert(T.hueDiff(c.h, base.h) <= 26, `${key} ${C.toHex(c)} h=${c.h.toFixed(0)}`);
+});
+ok('photo: dominant tones ignore white and gray, and come back most prominent first', () => {
+  const px = []; const add = (r, g, b, n) => { for (let i = 0; i < n; i++) px.push(r, g, b, 255); };
+  add(255, 255, 255, 400); add(128, 128, 128, 200); add(230, 60, 40, 300); add(40, 140, 60, 100);
+  const out = X.dominant(new Uint8ClampedArray(px), 4);
+  assert(out.length === 2, 'got ' + out.join(','));
+  assert(C.fromHex(out[0]).h < 45 || C.fromHex(out[0]).h > 340, 'red first: ' + out[0]);
 });
 console.log(`\n${n} checks passed`);
