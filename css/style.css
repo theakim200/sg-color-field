@@ -71,7 +71,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .blk { z-index: 1; } .blk[data-id="e"] { z-index: 0; } /* Ripe and Grounded always sit in front of Evergreen */
 .blk.hot, .blk.sel { z-index: 3; }
 .blk .lab { display: block; padding: 0 20px; }
-.blk .sub { position: absolute; left: 0; right: 0; top: calc(50% + 26.2px); padding: 0 28px; box-sizing: border-box; font-family: var(--font); font-weight: 400; font-size: 14px; line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: normal; color: #c1c1c1; }
+.blk .sub { position: absolute; left: 0; right: 0; bottom: 6%; padding: 0 28px; box-sizing: border-box; font-family: var(--font); font-weight: 400; font-size: 14px; line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: normal; color: #c1c1c1; }
 .blk .sub:empty, #art.mobile .blk .sub { display: none; }
 /* not chosen yet: panel gray with inactive-step gray type */
 .blk .binfo { position: absolute; left: 0; right: 0; bottom: 6%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 16px;
