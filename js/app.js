@@ -26,6 +26,8 @@
   const LIB_KEY = 'sg-color-field:library:v1';
   const ICON = {
     q: '<svg viewBox="0 0 10 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M1.3 4.9C1.3 2.8 2.8 1.3 5 1.3s3.7 1.3 3.7 3.2c0 1.6-1 2.2-2 2.9-.9.6-1.7 1.2-1.7 2.6"/><circle cx="5" cy="14.2" r=".6" fill="#fff" stroke-width="1.4"/></svg>',
+    up: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4.5 8V1.3M1.6 4l2.9-2.9L7.4 4"/></svg>',
+    right: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M1 4.5h6.7M5 1.6l2.9 2.9L5 7.4"/></svg>',
     check: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4.8l2.3 2.4L8 1.6"/></svg>',
     cross: '<svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M1 1l7 7M8 1L1 8"/></svg>',
     open: '<svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="1.2"><path d="M3 9l6-6M4 3h5v5"/></svg>',
@@ -297,7 +299,7 @@
             <div class="stack gap12">
               <div class="stack gap9">
                 <div class="fieldbox" id="fieldbox" tabindex="0" role="application" aria-label="Color field. Horizontal is hue, vertical is lightness. Arrow keys move the selection.">
-                  <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span></div>
+                  <canvas id="field" width="${FIELD.w}" height="${FIELD.h}"></canvas><span class="mkr ev" id="ev-mkr"><em>Evergreen</em></span><span class="mkr" id="mkr"></span><span class="fax fax-l">Lighter ${ICON.up}</span><span class="fax fax-h">Hue ${ICON.right}</span></div>
                 <div class="slab">Saturation</div>
                 <div class="track sat" id="int"><span class="knob"></span></div>
               </div>
@@ -367,8 +369,8 @@
     const key = activeKey(), terr = TERRITORIES[key];
     $('#sub').textContent = `${terr.label}: ${terr.character.slice(0, 3).join(' / ')}`;
     renderTabs();
-    // the track shows the real chroma range at the current hue and lightness
-    const cc = S.chips[S.active], stops = Array.from({ length: 9 }, (_, i) => C.toHex(T.colorAt(key, cc.h, cc.L, i / 8)));
+    // gray (no chroma) at this lightness up to the most saturated color the territory allows at this hue
+    const cc = S.chips[S.active], top = T.colorAt(key, cc.h, cc.L, 1), stops = Array.from({ length: 9 }, (_, i) => C.toHex(C.fitToGamut({ L: top.L, C: top.C * i / 8, h: top.h })));
     $('#int').style.background = `linear-gradient(90deg, ${stops.join(', ')})`;
     ui.int.set(S.t[S.active]);
     drawField();

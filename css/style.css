@@ -163,6 +163,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 .tab { position: relative; z-index: 1; display: flex; align-items: center; gap: 4.5px; padding: 3px 9px 5px; border: 1px solid transparent; border-radius: 13px; font-size: 14px; line-height: 1.11; white-space: nowrap; }
 .tab i { width: 11px; height: 11px; border-radius: 50%; display: block; flex: none; }
 .fieldbox { position: relative; height: 157px; border-radius: 15px; background: #e3e3e3; overflow: hidden; touch-action: none; cursor: crosshair; }
+.fax { position: absolute; display: flex; align-items: center; gap: 3px; font-size: 9px; line-height: 1; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: rgb(0 0 0 / 38%); pointer-events: none; z-index: 1; }
+.fax svg { width: 8px; height: 8px; display: block; } .fax-l { left: 10px; top: 9px; } .fax-h { right: 10px; bottom: 9px; }
 .fieldbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mkr { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 1.5px solid #fff; pointer-events: none; box-shadow: 0 0 0 .5px rgba(0,0,0,.18); transition: left 90ms linear, top 90ms linear; }
 .mkr.ev em { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,.8); border-radius: 13px; font: normal 10px/.88 var(--font); letter-spacing: var(--track); padding: 3px 4px 4px; text-transform: uppercase; color: #000; white-space: nowrap; }
