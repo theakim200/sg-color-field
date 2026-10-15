@@ -16,10 +16,12 @@
   const MQ = matchMedia('(max-width: 900px) and (min-height: 520px)'), isMobile = () => MQ.matches;
   const FIELD = { w: 360, h: 194, Ltop: 0.97, Lbot: 0.2 };
   const CHIP_IDS = ['g1', 'g2', 'r1', 'r2'];
+  const TAGLINE = { ripe: 'Colors that feel vibrant, expressive, and full', grounded: 'Colors that feel rooted, substantial, and tempered' };
+  const TAB_ORDER = ['r1', 'r2', 'g1', 'g2']; // tabs and first selection: Ripe before Grounded, 1 before 2
   const STAGE_ORDER = ['r2', 'r1', 'e', 'g1', 'g2']; // a second Ripe stacks above the first
   let STAGE_H = 710;
   const terrOf = (id) => (id[0] === 'g' ? 'grounded' : 'ripe');
-  const LEVEL = { body: ['Body text', 'good'], large: ['Large text only', 'warn'], fail: ['Avoid', 'bad'] };
+  const LEVEL = { pass: ['Pass', 'good'], fail: ['Avoid', 'bad'] };
   const ROLE_LABEL = { dominant: 'Dominant', supporting: 'Supporting', accent: 'Accent' };
   const LIB_KEY = 'sg-color-field:library:v1';
   const ICON = {
@@ -61,14 +63,14 @@
     const order = STAGE_ORDER.filter((id) => id === 'e' || ids.includes(id));
     const items = order.map(mk), byId = Object.fromEntries(items.map((i) => [i.id, i]));
     const ranked = E.hierarchy(items), roles = Object.fromEntries(ranked.map((o) => [o.id, o]));
-    cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: items.filter((i) => i.id !== 'e'), pickedChips: items.filter((i) => i.id !== 'e' && i.picked), hasG: q.g > 0, hasR: q.r > 0, labelOf };
-    if (!ids.includes(S.active)) S.active = ids.includes('r1') ? 'r1' : 'g1';
+    cur = { zone, z, pick, code, ids, q, items, byId, ranked, roles, chipItems: TAB_ORDER.map((id) => byId[id]).filter(Boolean), pickedChips: items.filter((i) => i.id !== 'e' && i.picked), hasG: q.g > 0, hasR: q.r > 0, labelOf };
+    if (!ids.includes(S.active)) S.active = TAB_ORDER.find((id) => ids.includes(id));
   }
   const activeKey = () => terrOf(S.active);
   const pickedOnly = (o) => o.id === 'e' || o.picked;
   const markPicked = (id) => { S.picked[id] = true; };
   const DOT_BLANK = '#d4d4d8';
-  // same rule as the contrast table (WCAG + APCA), so a block label never disagrees with the table
+  // same rule as the contrast table (APCA Lc 30+), so a block label never disagrees with the table
   const labelColor = (hex) => E.bestForeground(hex).fg;
   const terrName = (k) => TERRITORIES[k].label;
 
@@ -141,7 +143,7 @@
   function buildStage() {
     STAGE_ORDER.forEach((id) => {
       const b = document.createElement('div'); b.className = 'blk gone'; b.dataset.id = id; b.dataset.action = 'chip'; b.dataset.v = id;
-      b.innerHTML = '<div class="face"><span class="lab"></span><div class="binfo"></div></div>'; $('#stage').appendChild(b); blocks[id] = b;
+      b.innerHTML = '<div class="face"><span class="lab"></span><span class="sub"></span><div class="binfo"></div></div>'; $('#stage').appendChild(b); blocks[id] = b;
     });
   }
   function sizeStage() {
@@ -199,6 +201,7 @@
       b.classList.toggle('sel', (S.step === 2 || S.step === 3) && S.active === id);
       b.setAttribute('aria-label', blank ? `${it.label}, not chosen yet` : `${it.label}, ${it.hex}, ${ROLE_LABEL[cur.roles[id].role]}`);
       $('.lab', b).textContent = it.label;
+      $('.sub', b).textContent = blank ? TAGLINE[it.key] : '';
       $('.binfo', b).innerHTML = !blank && id !== 'e' && (S.step === 2 || S.step === 3) && S.active === id ? infoHtml(it) : '';
     });
     kickTilt();
@@ -465,7 +468,7 @@
     const head = cols.map(([n, hex]) => `<div class="h" title="${esc(n)} type"><i style="background:${hex}"></i></div>`).join('');
     const cells = order.map((o) => cols.map(([n, hex]) => {
       if (hex.toUpperCase() === o.hex.toUpperCase()) return `<div class="c same" title="Same color"></div>`;
-      const r = E.contrastLevel(hex, o.hex), mark = r.level === 'body' ? ICON.check : r.level === 'large' ? 'L' : ICON.cross;
+      const r = E.contrastLevel(hex, o.hex), mark = r.level === 'pass' ? ICON.check : ICON.cross;
       return `<div class="c lvl-${r.level}" style="background:${o.hex};color:${hex}" title="${esc(n)} on ${esc(o.label)}: ${LEVEL[r.level][0]}"><span class="a">Aa</span><span class="m">${mark}</span></div>`;
     }).join('')).join('');
     $('#apply').innerHTML = hd('Apply', 'How to use these colors') + `
@@ -473,7 +476,7 @@
         <div class="stack gap15 rows4">${rows}</div>
         <div class="stack gap13 mxwrap">
           <div class="mx" style="grid-template-columns:repeat(${cols.length},1fr)">${head}${cells}</div>
-          <div class="legend"><span>${ICON.check} Body text</span><span><b>L</b> Large text only</span><span>${ICON.cross} Avoid</span><span>Columns: type color</span></div>
+          <div class="legend"><span>${ICON.check} Pass (APCA 30+)</span><span>${ICON.cross} Avoid</span><span>Columns: type color</span></div>
           ${left.length ? `<p class="lt left">Not chosen yet: ${esc(left.join(', '))}. Left out of this palette.</p>` : ''}
         </div>
       </div>`;
@@ -554,6 +557,7 @@
   }
   function goStep(n) {
     if (n === 3 && S.step !== 3) S.cpBackup = { chips: { ...S.chips }, t: { ...S.t }, picked: { ...S.picked } };
+    if (n === 2 && S.step === 1) S.active = TAB_ORDER.find((id) => cur.ids.includes(id)) || S.active; // Ripe first
     S.step = Math.max(1, Math.min(4, n)); S.testMsg = ''; fullRender();
   }
   function restart() {

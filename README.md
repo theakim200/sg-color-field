@@ -72,4 +72,4 @@ Edit `ZONES` in `js/spectrum.js` to change this. Roles (Dominant / Supporting / 
 2. **Evergreen** is PANTONE 2423 C (RGB 0/168/16, `#00A810`, OKLCH 63% 0.212 143°) in `CONFIG`. **Ink** (`#111111`) is an assumed dark type color; confirm it. The tool's own UI uses black for headings and buttons because white type on Evergreen is only about 3.2:1.
 3. **Scoring weights and thresholds** in `engine.PARAMS` (hue harmony curve, Evergreen-fit weights) are first-pass and should be tuned against pairings the brand team judges good or bad.
 4. **CMYK** is a naive conversion; use press-profile values for print.
-5. Contrast "body text" requires WCAG ≥ 4.5 **and** APCA |Lc| ≥ 60 (`PARAMS.contrast`). Adjust to your accessibility policy.
+5. Contrast passes when APCA |Lc| >= 30 (`PARAMS.contrast.minLc`); there is no body / large-type split and WCAG is not used. Adjust to your accessibility policy.

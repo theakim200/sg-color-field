@@ -20,7 +20,7 @@
     hueHarmony: [[0, 0.9], [40, 0.9], [70, 0.6], [100, 0.7], [130, 0.85], [160, 1], [180, 1]],
     pair: { w: { distinct: 0.35, spread: 0.20, chromaBalance: 0.20, hue: 0.25 }, distinctRange: [0.10, 0.28] },
     trio: { relG: 0.3, relR: 0.3, pair: 0.4 },
-    contrast: { bodyWcag: 4.5, bodyLc: 60, largeWcag: 3, largeLc: 45 },
+    contrast: { minLc: 30 }, // APCA |Lc| at or above this passes; no body / large split
   };
 
   const interp = (tbl, x) => {
@@ -117,12 +117,10 @@
 
   /* ---------- Contrast ---------- */
   function contrastLevel(fg, bg) {
-    const K = PARAMS.contrast, ratio = C.wcag(fg, bg), lc = C.apca(fg, bg);
-    const level = ratio >= K.bodyWcag && Math.abs(lc) >= K.bodyLc ? 'body' : ratio >= K.largeWcag && Math.abs(lc) >= K.largeLc ? 'large' : 'fail';
-    return { fg, bg, ratio, lc, level };
+    const lc = C.apca(fg, bg), level = Math.abs(lc) >= PARAMS.contrast.minLc ? 'pass' : 'fail';
+    return { fg, bg, lc, level };
   }
-  const RANK = { body: 2, large: 1, fail: 0 };
-
+  
   /** Foreground options for a background (white, ink, Evergreen, plus extras). */
   function foregrounds(bgHex, extras = []) {
     const { whiteHex, inkHex, evergreenHex } = T.CONFIG;
@@ -133,7 +131,7 @@
   function bestForeground(bgHex) {
     const { whiteHex, inkHex } = T.CONFIG;
     return [['White', whiteHex], ['Ink', inkHex]].map(([name, hex]) => ({ name, ...contrastLevel(hex, bgHex) }))
-      .sort((a, b) => RANK[b.level] - RANK[a.level] || Math.abs(b.lc) - Math.abs(a.lc))[0];
+      .sort((a, b) => Math.abs(b.lc) - Math.abs(a.lc))[0];
   }
 
   /** Brand-use guidance: translates the technical results into usage tags. */
@@ -141,11 +139,9 @@
     const best = bestForeground(hex), { whiteHex, inkHex } = T.CONFIG;
     const asText = [whiteHex, inkHex].map((bg) => contrastLevel(hex, bg));
     const tags = [];
-    if (best.level === 'body') tags.push({ text: 'Best for backgrounds', tone: 'good' }, { text: best.name === 'Ink' ? 'Use with dark type' : 'Use with white type', tone: 'info' });
-    else if (best.level === 'large') tags.push({ text: 'Large type only on top', tone: 'warn' });
-    if (asText.some((x) => x.level === 'body')) tags.push({ text: 'Approved for text', tone: 'good' });
-    if (best.level !== 'body' && !asText.some((x) => x.level === 'body')) tags.push({ text: 'Best used as an accent', tone: 'info' });
-    if (best.level === 'large') tags.push({ text: 'Not recommended for small text', tone: 'warn' });
+    if (best.level === 'pass') tags.push({ text: 'Best for backgrounds', tone: 'good' }, { text: best.name === 'Ink' ? 'Use with dark type' : 'Use with white type', tone: 'info' });
+    if (asText.some((x) => x.level === 'pass')) tags.push({ text: 'Approved for text', tone: 'good' });
+    if (best.level !== 'pass' && !asText.some((x) => x.level === 'pass')) tags.push({ text: 'Best used as an accent', tone: 'info' });
     const rel = evergreenRelationship(c);
     if (rel.verdict === 'works') tags.push({ text: 'Works with Evergreen', tone: 'good' });
     else if (rel.verdict === 'care') tags.push({ text: 'Use carefully with Evergreen', tone: 'warn' });
