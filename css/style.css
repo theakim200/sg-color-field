@@ -243,11 +243,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ev); o
 
 /* ---------- intro ---------- */
 #intro { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-#intro img { position: absolute; display: block; opacity: 0; transform: scale(.96); object-fit: cover; transition: opacity 120ms linear, transform 260ms var(--ease); }
-#intro img.on { opacity: 1; transform: none; }
 /* the photos stay fully opaque; a white panel fades in over them (a dissolve to white, not a see-through overlap) */
-.icover { position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -210px 0 0 -210px; background: #fff; opacity: 0; transition: opacity var(--t-collapse) var(--ease-io); }
-#art.i-collapse .icover { opacity: 1; }
 #art.i-blocks #intro { display: none; } /* the intro layer (and its white panel) must not sit over the color blocks */
 #art[data-view="intro"] .panel { transition: none; }
 
@@ -296,7 +292,6 @@ html, body { touch-action: manipulation; }
 #art.mobile .toast { top: 60px; bottom: auto; }
 
 /* mobile fixes (all scoped to #art.mobile; desktop is untouched) */
-#art.mobile .icover { width: 280px; height: 300px; margin: -150px 0 0 -140px; } /* the white panel must not reach the s / g at the screen edges */
 #art.mobile .panel .body { padding-bottom: 6px; }                              /* underlines at the very end of the scroll are not clipped */
 #art.mobile .about { padding-bottom: 8px; }                                    /* nor the descenders of the last line */
 #art.mobile .pname input { transform: none; }                                  /* the 2px nudge pushed the field's edge under the scroll clip */

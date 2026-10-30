@@ -14,12 +14,9 @@
     intro: {
       mono: 600,      // "sg" monogram shows alone
       toEdges: 1200,   // s and g travel to the screen edges
-      stack: 130,     // gap between photos stacking up at the center
-      hold: 450,      // pause with the full stack
-      collapse: 550,  // white dissolves over the photos
       title: 350,     // "color farm" fades in and out
       titleHold: 800, // and stays this long
-      blocks: 500,    // the three color blocks arrive once the photos are gone
+      blocks: 500,    // the three color blocks arrive after the title
       panelDelay: 150 // panel arrives this long after the blocks
     },
   };
@@ -28,31 +25,23 @@
     s.setProperty('--ease', M.ease); s.setProperty('--ease-io', M.easeInOut);
     s.setProperty('--t-panel', M.panel + 'ms'); s.setProperty('--t-block', M.block + 'ms');
     s.setProperty('--t-skew', M.skew + 'ms'); s.setProperty('--t-fade', M.fade + 'ms');
-    s.setProperty('--t-edges', M.intro.toEdges + 'ms'); s.setProperty('--t-collapse', M.intro.collapse + 'ms'); s.setProperty('--t-blocks', M.intro.blocks + 'ms'); s.setProperty('--t-pill', M.pill + 'ms'); s.setProperty('--t-title', M.intro.title + 'ms');
+    s.setProperty('--t-edges', M.intro.toEdges + 'ms'); s.setProperty('--t-blocks', M.intro.blocks + 'ms'); s.setProperty('--t-pill', M.pill + 'ms'); s.setProperty('--t-title', M.intro.title + 'ms');
   };
 
   /** Intro timeline. Calls done() when the tool is ready; skip() ends it early. */
-  const IMGS = [ // file, width, height in px (from the design); every photo is centered on the screen
-    ['a', 181, 201], ['b', 141, 251], ['c', 203, 225], ['d', 157, 200],
-    ['e', 115, 171], ['f', 228, 171], ['g', 203, 269], ['h', 157, 220],
-  ];
   M.runIntro = function (art, host, done) {
-    host.innerHTML = IMGS.map(([f, w, h]) => `<img src="assets/intro/${f}.webp" alt="" style="left:50%;top:50%;margin:${-h / 2}px 0 0 ${-w / 2}px;width:${w}px;height:${h}px">`).join('') + '<div class="icover"></div><div class="ititle">color farm</div>';
-    const imgs = [...host.children].filter((n) => n.tagName === 'IMG'), T = M.intro, timers = [];
+    host.innerHTML = '<div class="ititle">color farm</div>';
+    const T = M.intro, timers = [];
     let ended = false;
     const at = (ms, fn) => timers.push(setTimeout(fn, ms));
     const finish = () => {
       if (ended) return; ended = true; timers.forEach(clearTimeout);
-      art.classList.remove('i-mono', 'i-edges', 'i-collapse', 'i-title', 'i-blocks'); art.dataset.view = 'main'; host.innerHTML = ''; done();
+      art.classList.remove('i-mono', 'i-edges', 'i-title', 'i-blocks'); art.dataset.view = 'main'; host.innerHTML = ''; done();
     };
     art.classList.add('i-mono');
     let t = T.mono;
-    at(t, () => art.classList.add('i-edges'));
-    t += 250;
-    imgs.forEach((im, i) => at(t + i * T.stack, () => im.classList.add('on')));
-    t += imgs.length * T.stack + T.hold;
-    at(t, () => art.classList.add('i-collapse'));                       // 1. photos leave
-    t += T.collapse;
+    at(t, () => art.classList.add('i-edges'));                          // 1. s and g travel to the screen edges
+    t += T.toEdges;
     at(t, () => art.classList.add('i-title'));                          // 2. "color farm" title
     t += T.title + T.titleHold;
     at(t, () => art.classList.remove('i-title'));
