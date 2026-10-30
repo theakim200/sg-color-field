@@ -14,6 +14,7 @@
     intro: {
       mono: 600,      // "sg" monogram shows alone
       toEdges: 1200,   // s and g travel to the screen edges
+      titleAt: 450,    // "color farm" starts fading in this long after s and g start moving
       title: 350,     // "color farm" fades in and out
       titleHold: 800, // and stays this long
       blocks: 500,    // the three color blocks arrive after the title
@@ -41,7 +42,7 @@
     art.classList.add('i-mono');
     let t = T.mono;
     at(t, () => art.classList.add('i-edges'));                          // 1. s and g travel to the screen edges
-    t += T.toEdges;
+    t += T.titleAt;
     at(t, () => art.classList.add('i-title'));                          // 2. "color farm" title
     t += T.title + T.titleHold;
     at(t, () => art.classList.remove('i-title'));
